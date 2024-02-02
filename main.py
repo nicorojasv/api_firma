@@ -7,6 +7,7 @@ from xmlrpc.client import ServerProxy
 import datetime
 import base64
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
+import certifi
 # Keys de JWT
 SECRET_KEY = "WCTi4FvUmr891sNzASFDwi85Ri7gR8a0DSF9d2l59UbDKEMts"
 ALGORITHM = "HS256"
@@ -111,10 +112,18 @@ def test_odoo():
 
             attachment = {'name': 'prueba.pdf', 'datas': file_content, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
+            signature_field_customer = {'type_id':1,'required':True,'name': 'Firma Cliente', 'page': 1, 'responsible_id': customer_role_id,'posX':0.368,'posY':0.334,'width':0.2,'height':0.1,'required':True}
+            signature_field_employee = {'type_id':2,'required':True,'name': 'Firma Empleado', 'page': 1,'responsible_id': employee_role_id,'posX':0.368,'posY':0.7,'width':0.2,'height':0.1,'required':True}
 
             # Create template
-            template_data = {'name': 'Template prueba', 'attachment_id': attachment_id}
+            template_data = {'name': 'Template prueba', 
+                             'attachment_id': attachment_id,
+                             'sign_item_ids': [
+                (0, 0, signature_field_customer),
+                (0, 0, signature_field_employee)
+            ]}
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
+
             print(template_id)
             # Create signature request
             request_data = {
@@ -128,9 +137,6 @@ def test_odoo():
             }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
             print(request_id)
-            # Send signature request
-            send_request_data = {'request_id': request_id, 'set_sign_order': True}
-            send_request = models.execute_kw(db, uid, password, 'sign.template', 'send_request', [template_id, send_request_data])
 
             return {"success": "Solicitud de firma enviada correctamente."}
         else:
