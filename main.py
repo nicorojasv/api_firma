@@ -7,7 +7,8 @@ from xmlrpc.client import ServerProxy
 import datetime
 import base64
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
-import certifi
+from PyPDF2 import PdfReader
+
 # Keys de JWT
 SECRET_KEY = "WCTi4FvUmr891sNzASFDwi85Ri7gR8a0DSF9d2l59UbDKEMts"
 ALGORITHM = "HS256"
@@ -99,21 +100,37 @@ def test_odoo():
             employee_role_id = role_mapping.get('Employee')
 
             # Create partners
-            partner_data_1 = {'name': 'Mayerlyn Rodriguez', 'email': 'maye.yrs23@gmail.com'}
-            partner_data_2 = {'name': 'Nicolas Rojas', 'email': 'n.rojas.valdes@gmail.com'}
-            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
-            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
+            partner_data_1 = {'name': 'Mayerlyn Rodriguez', 'email': 'mayerlyn.rodriguez@yopmail.com'}
+            partner_data_2 = {'name': 'Nicolas Rojas', 'email': 'nrojas@yopmail.com'}
+            
+            # Consultar si el primer socio ya está registrado
+            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
+            if not partner_id_1:
+                partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
+            else:
+                partner_id_1 = partner_id_1[0]
 
+            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['email'])]])
+            if not partner_id_2:
+                partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
+            else:
+                partner_id_2 = partner_id_2[0]
+
+
+            
            
             # Create attachment
-            file_path = './PDF_TEXT.pdf'
+            file_path = './autorizacion-18.857.068-2.pdf'
             with open(file_path, "rb") as file:
                 file_content = base64.b64encode(file.read()).decode('utf-8')
+                reader = PdfReader(file)
+                num_pages = len(reader.pages)
 
+            print(num_pages)
             attachment = {'name': 'prueba.pdf', 'datas': file_content, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
-            signature_field_customer = {'type_id':1,'required':True,'name': 'Firma Cliente', 'page': 1, 'responsible_id': customer_role_id,'posX':0.368,'posY':0.334,'width':0.2,'height':0.1,'required':True}
-            signature_field_employee = {'type_id':2,'required':True,'name': 'Firma Empleado', 'page': 1,'responsible_id': employee_role_id,'posX':0.368,'posY':0.7,'width':0.2,'height':0.1,'required':True}
+            signature_field_customer = {'type_id':1,'required':True,'name': partner_data_1['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+            signature_field_employee = {'type_id':2,'required':True,'name': partner_data_2['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
 
             # Create template
             template_data = {'name': 'Template prueba', 
