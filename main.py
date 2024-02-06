@@ -83,7 +83,7 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user)):
     return current_user
 
     
-@app.get("/conexion")
+@app.post("/conexion")
 def test_odoo(data: dict):
     print(data)
     try:
