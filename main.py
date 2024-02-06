@@ -84,6 +84,9 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user)):
     return current_user
 
     
+# Agrega importaciones necesarias
+import io
+
 @app.post("/conexion")
 def test_odoo(data: dict):
     try:
@@ -96,75 +99,50 @@ def test_odoo(data: dict):
             roles = models.execute_kw(db, uid, password, 'sign.item.role', 'search_read', [[]], {'fields': ['id', 'name']})
             role_mapping = {role['name']: role['id'] for role in roles}
 
-            # Assuming 'Customer' and 'Employee' are the names of roles in your Odoo instance
-            customer_role_id = role_mapping.get('Customer')
-            employee_role_id = role_mapping.get('Employee')
-
-            # Create attachment
-            file_path = './autorizacion-18.857.068-2.pdf'
-
+            # Validate input data
             document = data.get('document')
-            # Decodificamos la cadena base64
-            pdf_content = base64.b64decode(document)
-
-            # Creamos un archivo temporal para escribir el contenido decodificado
-            with open("temp_pdf_file.pdf", "wb") as pdf_file:
-                pdf_file.write(pdf_content)
-
-            # Ahora podemos abrir el archivo temporal y contar el número de páginas
-            with open("temp_pdf_file.pdf", "rb") as file:
-                reader = PdfReader(file)
-                num_pages = len(reader.pages)
-
-            # Eliminamos el archivo temporal
-            os.remove("temp_pdf_file.pdf")
-
-            # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
+            if not document or not signing_parties:
+                return {"error": "Datos de entrada incompletos."}
 
-            # Obtener los nombres y direcciones de los SigningParties
-            for signing_party in signing_parties:
-                name = signing_party.get('name')
-                address = signing_party.get('address')
-                role = signing_party.get('legalName')
-                partner_data= {'name': name, 'email': address}
-                partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data['email'])]])
-                if not partner_id:
-                    partner_id = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data])
-                else:
-                    partner_id = partner_id[0]
-                if role == 'Trabajador':
-                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
-                    partner_id_1 = partner_id
-                else:
-                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
-                    partner_id_2 = partner_id
+            # Decode PDF document
+            pdf_content = base64.b64decode(document)
+            num_pages = len(PdfReader(io.BytesIO(pdf_content)).pages)
 
             attachment = {'name': 'prueba.pdf', 'datas': document, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
+            # Prepare signature fields
+            signature_fields = []
+            partner_ids = {}
+            for signing_party in signing_parties:
+                name = signing_party.get('name')
+                address = signing_party.get('address')
+                role = signing_party.get('legalName')
+                partner_data = {'name': name, 'email': address}
+
+                # Check if partner exists, create if not
+                partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data['email'])]])
+                if not partner_id:
+                    partner_id = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data], {'context': {'create_missing': True}})
+                else:
+                    partner_id = partner_id[0]
+
+                partner_ids[role] = partner_id
+
+                # Prepare signature field data
+                if role == 'Trabajador':
+                    signature_fields.append({'type_id':1, 'required': True, 'name': partner_data['name'], 'page': num_pages, 'responsible_id': role_mapping.get('Customer'), 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1})
+                else:
+                    signature_fields.append({'type_id':2, 'required': True, 'name': partner_data['name'], 'page': num_pages, 'responsible_id': role_mapping.get('Employee'), 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1})
+
             # Create template
-            template_data = {'name': 'Template prueba', 
-                             'attachment_id': attachment_id,
-                             'sign_item_ids': [
-                (0, 0, signature_field_customer),
-                (0, 0, signature_field_employee)
-            ]}
+            template_data = {'name': 'Template prueba', 'attachment_id': attachment_id, 'sign_item_ids': [(0, 0, field) for field in signature_fields]}
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
 
-            
             # Create signature request
-            request_data = {
-                'template_id': template_id,
-                'subject': 'Solicitud de firma',
-                'reference': 'Solicitud de firma',
-                'request_item_ids': [
-                    (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id}), 
-                    (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id}),
-                ]
-            }
+            request_data = {'template_id': template_id, 'subject': 'Solicitud de firma', 'reference': 'Solicitud de firma', 'request_item_ids': [(0, 0, {'partner_id': partner_ids['Trabajador'], 'role_id': role_mapping.get('Customer')}), (0, 0, {'partner_id': partner_ids['whatever_the_other_role_is'], 'role_id': role_mapping.get('Employee')})]}
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
-            
 
             return {"success": "Solicitud de firma enviada correctamente."}
         else:
@@ -175,5 +153,10 @@ def test_odoo(data: dict):
         return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
     except ValueError as ve:
         return {"error": f"Error de valor: {ve}"}
+    except FileNotFoundError:
+        return {"error": "Archivo no encontrado."}
+    except KeyError as ke:
+        return {"error": f"Clave no encontrada: {ke}"}
     except Exception as e:
         return {"error": f"Error desconocido: {str(e)}"}
+
