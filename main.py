@@ -85,7 +85,6 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user)):
     
 @app.post("/conexion")
 def test_odoo(data: dict):
-    print(data)
     try:
         # Authentication in Odoo
         common = ServerProxy('{}/xmlrpc/2/common'.format(url))
@@ -99,6 +98,18 @@ def test_odoo(data: dict):
             # Assuming 'Customer' and 'Employee' are the names of roles in your Odoo instance
             customer_role_id = role_mapping.get('Customer')
             employee_role_id = role_mapping.get('Employee')
+
+            # Create attachment
+            file_path = './autorizacion-18.857.068-2.pdf'
+
+            document = data.get('document')
+
+
+
+            with open(file_path, "rb") as file:
+                file_content = base64.b64encode(file.read()).decode('utf-8')
+                reader = PdfReader(file)
+                num_pages = len(reader.pages)
 
             # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
@@ -121,16 +132,7 @@ def test_odoo(data: dict):
                     signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
                     partner_id_2 = partner_id
 
-            
-           
-            # Create attachment
-            file_path = './autorizacion-18.857.068-2.pdf'
-            with open(file_path, "rb") as file:
-                file_content = base64.b64encode(file.read()).decode('utf-8')
-                reader = PdfReader(file)
-                num_pages = len(reader.pages)
-
-            attachment = {'name': 'prueba.pdf', 'datas': file_content, 'type': 'binary'}
+            attachment = {'name': 'prueba.pdf', 'datas': document, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
@@ -142,7 +144,7 @@ def test_odoo(data: dict):
             ]}
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
 
-            print(template_id)
+            
             # Create signature request
             request_data = {
                 'template_id': template_id,
@@ -154,7 +156,7 @@ def test_odoo(data: dict):
                 ]
             }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
-            print(request_id)
+            
 
             return {"success": "Solicitud de firma enviada correctamente."}
         else:
