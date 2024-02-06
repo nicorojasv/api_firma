@@ -84,7 +84,8 @@ async def read_users_me(current_user: TokenData = Depends(get_current_user)):
 
     
 @app.get("/conexion")
-def test_odoo():
+def test_odoo(data: dict):
+    print(data)
     try:
         # Authentication in Odoo
         common = ServerProxy('{}/xmlrpc/2/common'.format(url))
@@ -99,23 +100,26 @@ def test_odoo():
             customer_role_id = role_mapping.get('Customer')
             employee_role_id = role_mapping.get('Employee')
 
-            # Create partners
-            partner_data_1 = {'name': 'Mayerlyn Rodriguez', 'email': 'mayerlyn.rodriguez@yopmail.com'}
-            partner_data_2 = {'name': 'Nicolas Rojas', 'email': 'nrojas@yopmail.com'}
-            
-            # Consultar si el primer socio ya está registrado
-            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
-            if not partner_id_1:
-                partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
-            else:
-                partner_id_1 = partner_id_1[0]
+            # Obtener los SigningParties de los datos recibidos
+            signing_parties = data.get('SigningParties')
 
-            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['email'])]])
-            if not partner_id_2:
-                partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
-            else:
-                partner_id_2 = partner_id_2[0]
-
+            # Obtener los nombres y direcciones de los SigningParties
+            for signing_party in signing_parties:
+                name = signing_party.get('name')
+                address = signing_party.get('address')
+                role = signing_party.get('legalName')
+                partner_data= {'name': name, 'email': address}
+                partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data['email'])]])
+                if not partner_id:
+                    partner_id = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data])
+                else:
+                    partner_id = partner_id[0]
+                if role == 'Trabajador':
+                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    partner_id_1 = partner_id
+                else:
+                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    partner_id_2 = partner_id
 
             
            
@@ -126,11 +130,8 @@ def test_odoo():
                 reader = PdfReader(file)
                 num_pages = len(reader.pages)
 
-            print(num_pages)
             attachment = {'name': 'prueba.pdf', 'datas': file_content, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
-            signature_field_customer = {'type_id':1,'required':True,'name': partner_data_1['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
-            signature_field_employee = {'type_id':2,'required':True,'name': partner_data_2['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
 
             # Create template
             template_data = {'name': 'Template prueba', 
