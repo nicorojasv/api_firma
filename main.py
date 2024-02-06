@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+import os
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -103,13 +104,20 @@ def test_odoo(data: dict):
             file_path = './autorizacion-18.857.068-2.pdf'
 
             document = data.get('document')
+            # Decodificamos la cadena base64
+            pdf_content = base64.b64decode(document)
 
+            # Creamos un archivo temporal para escribir el contenido decodificado
+            with open("temp_pdf_file.pdf", "wb") as pdf_file:
+                pdf_file.write(pdf_content)
 
-
-            with open(file_path, "rb") as file:
-                file_content = base64.b64encode(file.read()).decode('utf-8')
+            # Ahora podemos abrir el archivo temporal y contar el número de páginas
+            with open("temp_pdf_file.pdf", "rb") as file:
                 reader = PdfReader(file)
                 num_pages = len(reader.pages)
+
+            # Eliminamos el archivo temporal
+            os.remove("temp_pdf_file.pdf")
 
             # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
