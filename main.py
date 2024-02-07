@@ -105,6 +105,9 @@ def test_odoo(data: dict):
             # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
 
+            #obtener documento
+            documento = data.get('document')
+
             # Obtener los nombres y direcciones de los SigningParties
             for signing_party in signing_parties:
                 name = signing_party.get('name')
@@ -117,22 +120,22 @@ def test_odoo(data: dict):
                 else:
                     partner_id = partner_id[0]
                 if role == 'Trabajador':
-                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': 2, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
                     partner_id_1 = partner_id
                 else:
-                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': 2,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
                     partner_id_2 = partner_id
 
             
            
             # Create attachment
-            file_path = './autorizacion-18.857.068-2.pdf'
-            with open(file_path, "rb") as file:
-                file_content = base64.b64encode(file.read()).decode('utf-8')
-                reader = PdfReader(file)
-                num_pages = len(reader.pages)
+            # file_path = './autorizacion-18.857.068-2.pdf'
+            # with open(file_path, "rb") as file:
+            #     file_content = base64.b64encode(file.read()).decode('utf-8')
+            #     reader = PdfReader(file)
+            #     num_pages = len(reader.pages)
 
-            attachment = {'name': 'prueba.pdf', 'datas': file_content, 'type': 'binary'}
+            attachment = {'name': 'prueba.pdf', 'datas': documento, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
