@@ -123,10 +123,10 @@ def test_odoo(data: dict):
                 else:
                     partner_id = partner_id[0]
                 if role == 'Trabajador':
-                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': num_pages, 'responsible_id': customer_role_id,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    signature_field_customer = {'type_id':1,'required':True,'name': partner_data['name'], 'page': num_pages, 'responsible_id': employee_role_id ,'posX':0.15,'posY':0.85,'width':0.2,'height':0.1,'required':True}
                     partner_id_1 = partner_id
                 else:
-                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': employee_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
+                    signature_field_employee = {'type_id':2,'required':True,'name': partner_data['name'], 'page': num_pages,'responsible_id': customer_role_id,'posX':0.7,'posY':0.85,'width':0.2,'height':0.1,'required':True}
                     partner_id_2 = partner_id
 
 
@@ -149,8 +149,8 @@ def test_odoo(data: dict):
                 'subject': 'Solicitud de firma',
                 'reference': 'Solicitud de firma',
                 'request_item_ids': [
-                    (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id}), 
-                    (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id}),
+                    (0, 0, {'partner_id': partner_id_1, 'role_id': employee_role_id ,'mail_sent_order': 1}), 
+                    (0, 0, {'partner_id': partner_id_2, 'role_id': customer_role_id , 'mail_sent_order': 2 }),
                 ]
             }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
