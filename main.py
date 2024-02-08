@@ -156,7 +156,10 @@ def test_odoo(data: dict):
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
             print(request_id)
 
-            return {"success": "Solicitud de firma enviada correctamente."}
+            response = {
+                'template_id': template_id
+            }
+            return response
         else:
             return {"error": "Autenticación fallida. Verifica tus credenciales."}
     except ConnectionError:
