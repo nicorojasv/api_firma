@@ -1,9 +1,4 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-import os
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from pydantic import BaseModel
-from typing import Optional
 from xmlrpc.client import ServerProxy
 import datetime
 import base64
@@ -23,68 +18,6 @@ password = 'MN2o24*'
 app = FastAPI()
 
 # Clases
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# verificar el token
-def verify_token(token: str, credentials_exception):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    return token_data
-
-# Endpoint para obtener el token
-@app.post("/token")
-async def login_for_access_token(form_data: TokenData):
-    # Aquí podrías añadir tu lógica para verificar la identidad del usuario
-    if form_data.username != 'hola':
-        return {"error": "Usuario o contraseña incorrectos"}
-    # access_token_expires = datetime.timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": form_data.username}#, expires_delta=access_token_expires
-    )
-    print(access_token)
-    #return {"access_token": access_token, "token_type": "bearer"}
-    return "Token generado"
-
-# Crear un token de acceso
-def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-# Dependencia para obtener el usuario actual
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No se pudieron validar las credenciales",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    return verify_token(token, credentials_exception)
-
-# Endpoint protegido que requiere autenticación
-@app.get("/users/me")
-async def read_users_me(current_user: TokenData = Depends(get_current_user)):
-    return current_user
-
-    
-
 @app.post("/conexion")
 def test_odoo(data: dict):
     print(data)
