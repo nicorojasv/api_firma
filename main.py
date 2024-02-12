@@ -25,6 +25,11 @@ def test_odoo(data: dict):
         # Authentication in Odoo
         common = ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
+        # Validación de días (5)
+        validity = datetime.datetime.now() + datetime.timedelta(days=5)
+        validity_date = validity.date()
+        validity_date_str = validity_date.strftime('%Y-%m-%d')
+        print('validez', validity_date_str)
 
         if uid:
             models = ServerProxy('{}/xmlrpc/2/object'.format(url))
@@ -79,13 +84,24 @@ def test_odoo(data: dict):
             # Create signature request
             request_data = {
                 'template_id': template_id,
-                'subject': 'Solicitud de firma',
-                'reference': 'Solicitud de firma',
+                'subject': f'	Firma Contrato {documento}',
+                'reference': 'Contrato',
+                'reminder': 3,
+                'validity': validity_date_str,
                 'request_item_ids': [
                     (0, 0, {'partner_id': partner_id_1, 'role_id': employee_role_id ,'mail_sent_order': 1}), 
                     (0, 0, {'partner_id': partner_id_2, 'role_id': customer_role_id , 'mail_sent_order': 2 }),
-                ]
-            }
+                ],
+                'message': """<html>
+                                <head>
+                                    <title>Mi página de ejemplo</title>
+                                </head>
+                                <body>
+                                Aquí va el contenido SGO3 / FirmaTec
+                                </body>
+                            </html>""",
+                'state': 'sent' # shared, sent, signed, refused, canceled, expired
+        }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
             print(request_id)
 
