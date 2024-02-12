@@ -20,7 +20,7 @@ app = FastAPI()
 # Clases
 @app.post("/conexion")
 def test_odoo(data: dict):
-    print(data)
+    # print(data)
     try:
         # Authentication in Odoo
         common = ServerProxy('{}/xmlrpc/2/common'.format(url))
@@ -72,7 +72,7 @@ def test_odoo(data: dict):
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
-            template_data = {'name': 'Template prueba', 
+            template_data = {'name': 'Template PRUEBA', 
                              'attachment_id': attachment_id,
                              'sign_item_ids': [
                 (0, 0, signature_field_customer),
@@ -101,7 +101,7 @@ def test_odoo(data: dict):
                                 </body>
                             </html>""",
                 'state': 'sent' # shared, sent, signed, refused, canceled, expired
-        }
+            }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
             print(request_id)
 
