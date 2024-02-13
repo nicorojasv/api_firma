@@ -44,7 +44,8 @@ def test_odoo(data: dict):
             signing_parties = data.get('SigningParties')
 
             #obtener documento
-            documento = data.get('document')
+            documentos = data.get('document')
+            subject = data.get('subject')
 
             # cantidad de paginas del documento
             num_pages = data.get('numberPages')
@@ -68,11 +69,11 @@ def test_odoo(data: dict):
                     partner_id_2 = partner_id
 
 
-            attachment = {'name': 'prueba.pdf', 'datas': documento, 'type': 'binary'}
+            attachment = {'name': 'prueba.pdf', 'datas': documentos, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
-            template_data = {'name': 'Template PRUEBA', 
+            template_data = {'name': 'Template PRUEBA' + subject, 
                              'attachment_id': attachment_id,
                              'sign_item_ids': [
                 (0, 0, signature_field_customer),
@@ -84,7 +85,7 @@ def test_odoo(data: dict):
             # Create signature request
             request_data = {
                 'template_id': template_id,
-                'subject': f'	Firma Contrato {documento}',
+                'subject': f'	Firma Contrato {subject}',
                 'reference': 'Contrato',
                 'reminder': 3,
                 'validity': validity_date_str,
@@ -94,7 +95,7 @@ def test_odoo(data: dict):
                 ],
                 'message': """<html>
                                 <head>
-                                    <title>Mi página de ejemplo</title>
+                                    <title>Maye</title>
                                 </head>
                                 <body>
                                 Aquí va el contenido SGO3 / FirmaTec
