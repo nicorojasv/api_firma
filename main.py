@@ -42,13 +42,18 @@ def test_odoo(data: dict):
 
             # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
+            print('signing_parties', signing_parties)
 
             #obtener documento
             documentos = data.get('document')
             subject = data.get('subject')
+            print('subject', subject)
+            pages = data.get('docPages')
+            print('pages', pages)
 
             # cantidad de paginas del documento
             num_pages = data.get('numberPages')
+            print('num_pages', num_pages)
 
             # Obtener los nombres y direcciones de los SigningParties
             for signing_party in signing_parties:
@@ -69,11 +74,12 @@ def test_odoo(data: dict):
                     partner_id_2 = partner_id
 
 
-            attachment = {'name': 'prueba.pdf', 'datas': documentos, 'type': 'binary'}
+            attachment = {'name': subject, 'datas': documentos, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
-            template_data = {'name': 'Template PRUEBA' + subject, 
+            template_data = {'name': 'Template PRUEBA' + subject,
+                             'redirect_url': 'https://portal.firmatec.cl/',
                              'attachment_id': attachment_id,
                              'sign_item_ids': [
                 (0, 0, signature_field_customer),
