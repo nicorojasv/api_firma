@@ -74,11 +74,12 @@ def test_odoo(data: dict):
                     partner_id_2 = partner_id
 
 
-            attachment = {'name': subject, 'datas': documentos, 'type': 'binary'}
+            attachment = {'name': 'hola.pdf', 'datas': documentos, 'type': 'binary'}
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
+            print('attachment_id creado')
 
             # Create template
-            template_data = {'name': 'Template PRUEBA ' + subject,
+            template_data = {'name': 'Template PRUEBA',
                              'redirect_url': 'https://portal.firmatec.cl/',
                              'attachment_id': attachment_id,
                                  'sign_item_ids': []}
