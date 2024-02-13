@@ -88,11 +88,11 @@ def test_odoo(data: dict):
                     if firmante['posicion'] == 'primera':
                         print('nombre ', firmante['name'])
                         template_data['sign_item_ids'].append(
-                            (0, 0, {'type_id': firmante['type_id'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                            (0, 0, {'type_id': firmante['signingOrder'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                         )
                     elif firmante['posicion'] == 'segunda':
                         template_data['sign_item_ids'].append(
-                            (0, 0, {'type_id': firmante['type_id'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                            (0, 0, {'type_id': firmante['signingOrder'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                         )
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
 
