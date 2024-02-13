@@ -78,20 +78,27 @@ def test_odoo(data: dict):
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Create template
-            template_data = {'name': 'Template PRUEBA' + subject,
+            template_data = {'name': 'Template PRUEBA ' + subject,
                              'redirect_url': 'https://portal.firmatec.cl/',
                              'attachment_id': attachment_id,
-                             'sign_item_ids': [
-                (0, 0, signature_field_customer),
-                (0, 0, signature_field_employee)
-            ]}
+                                 'sign_item_ids': []}
+            for firmante in signing_parties:
+                for i in range(pages):
+                    if firmante['posicion'] == 'primera':
+                        template_data['sign_item_ids'].append(
+                            (0, 0, {'type_id': firmante['type_id'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                        )
+                    elif firmante['posicion'] == 'segunda':
+                        template_data['sign_item_ids'].append(
+                            (0, 0, {'type_id': firmante['type_id'], 'required': True, 'name': firmante['name'], 'page': i, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                        )
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
 
             print(template_id)
             # Create signature request
             request_data = {
                 'template_id': template_id,
-                'subject': f'	Firma Contrato {subject}',
+                'subject': f'	PRUEBA {subject}',
                 'reference': 'Contrato',
                 'reminder': 3,
                 'validity': validity_date_str,
