@@ -36,16 +36,16 @@ def test_odoo(data: dict):
             customer_role_id = role_mapping.get('Customer')
             employee_role_id = role_mapping.get('Employee')
 
-            #DATA
+            # DATA
             # Obtener los SigningParties de los datos recibidos
             signing_parties = data.get('SigningParties')
             print('signing_parties', signing_parties)
 
-            #obtener documento
+            # obtener documento
             documentos = data.get('document')
             subject = data.get('subject')
             print('subject', subject)
-            pages = data.get('docPages')
+            pages = data.get('pages')
             print('pages', pages)
 
             # Create partners
@@ -53,21 +53,18 @@ def test_odoo(data: dict):
             partner_data_2 = signing_parties[1]
             
             # Consultar si el primer socio ya está registrado
-            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['address'])]])
+            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
             if not partner_id_1:
                 partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
             else:
                 partner_id_1 = partner_id_1[0]
 
-            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['address'])]])
+            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['email'])]])
             if not partner_id_2:
                 partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
             else:
-                partner_id_2 = partner_id_2[0]            
-
-            print('hola')
-
-
+                partner_id_2 = partner_id_2[0]
+            print('firmantes')
 
             # Crear attachment
             attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
@@ -78,18 +75,19 @@ def test_odoo(data: dict):
 
             for firmante in signing_parties:
                 for page in pages:  # Iterate through the desired pages list
-                    if firmante['posicion'] == 'primera':
+                    if firmante['display_name'] == 'Trabajador':
                         template_data['sign_item_ids'].append(
-                            (0, 0, {'type_id': firmante['signingOrder'], 'required': True, 'name': firmante['name'],
+                            (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                                     'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                         )
-                    elif firmante['posicion'] == 'segunda':
+                    elif firmante['display_name'] == 'Empleador':
                         template_data['sign_item_ids'].append(
-                            (0, 0, {'type_id': firmante['signingOrder'], 'required': True, 'name': firmante['name'],
+                            (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                                     'page': page, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                         )
 
             template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
+            print('hola')
 
             # Validación de días (5)
             validity_date = validity.date()
