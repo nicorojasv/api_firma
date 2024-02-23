@@ -97,8 +97,8 @@ def test_odoo(data: dict):
             # Crear signature request
             request_data = {
                 'template_id': template_id,
-                'subject': f'	Firma {subject}',
-                'reference': 'Contrato',
+                'subject': subject,
+                'reference': data.get('reference'),
                 'reminder': 1,
                 'validity': validity_date_str,
                 # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
@@ -106,14 +106,7 @@ def test_odoo(data: dict):
                     (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id, 'mail_sent_order': 1}), 
                     (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id, 'mail_sent_order': 2}),
                 ],
-                'message': """<html>
-                                <head>
-                                    <title>Maye</title>
-                                </head>
-                                <body>
-                                Aquí va el contenido SGO3 / FirmaTec
-                                </body>
-                            </html>""",
+                'message': data.get('message'),
                 'state': 'sent' # shared, sent, signed, refused, canceled, expired
 
             }
