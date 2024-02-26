@@ -41,6 +41,9 @@ def test_odoo(data: dict):
             signing_parties = data.get('SigningParties')
             print('signing_parties', signing_parties)
 
+            #obetener contrato id
+            redirect_url = data.get('redirect_url')
+
             # obtener documento
             documentos = data.get('document')
             subject = data.get('subject')
@@ -71,7 +74,7 @@ def test_odoo(data: dict):
             attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
 
             # Crear template
-            template_data = {'name': subject, 'redirect_url': 'https://portal.firmatec.cl/', 'attachment_id': attachment_id, 'sign_item_ids': []}
+            template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
 
             for firmante in signing_parties:
                 for page in pages:  # Iterate through the desired pages list
