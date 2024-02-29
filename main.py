@@ -180,11 +180,12 @@ async def procesar_email(request: Request):
     print('id_contrato', id_contrato, 'status', status)
 
     url = 'https://dev.firmatec.cl/firmas/recepcion_documentos_odoo'
-    payload = json.dumps({
+    payload = {
                 "contrato_id": id_contrato,
                 "estado_firma": status,
-                })
-    response = requests.request("POST", url, data=payload)
+                }
+    headers = {'Content-Type': 'application/json'}
+    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
     print('response', response)
 
     if not id_contrato or not status:
