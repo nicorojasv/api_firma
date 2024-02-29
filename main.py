@@ -3,6 +3,7 @@ from xmlrpc.client import ServerProxy
 import datetime
 import base64
 import requests
+import json
 import re
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
 from PyPDF2 import PdfReader
@@ -179,7 +180,11 @@ async def procesar_email(request: Request):
     print('id_contrato', id_contrato, 'status', status)
 
     url = 'https://dev.firmatec.cl/firmas/recepcion_documentos_odoo'
-    response = requests.request("POST", url)
+    payload = json.dumps({
+                "contrato_id": id_contrato,
+                "estado_firma": status,
+                })
+    response = requests.request("POST", url, data=payload)
     print('response', response)
 
     if not id_contrato or not status:
