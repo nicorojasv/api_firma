@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Request, Depends, HTTPException, status
 from xmlrpc.client import ServerProxy
 import datetime
 import base64
+import requests
+import re
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
 from PyPDF2 import PdfReader
 
@@ -65,6 +67,26 @@ def test_odoo(data: dict):
             else:
                 partner_id_2 = partner_id_2[0]
             print('firmantes')
+            # Obtener el ID del socio con la dirección de correo electrónico 'test@krino.ai'
+            cc_partner_email = 'test@krino.ai'
+            cc_partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', cc_partner_email)]])
+            if cc_partner_id:
+                cc_partner_id = cc_partner_id[0]
+            else:
+                # Si no existe, puedes decidir cómo manejar este caso
+                cc_partner_id = None
+            print('cc_partner_id', cc_partner_id)
+
+            # Etiquetas
+            # Consultar si el primer socio ya está registrado
+            tag = 'Contrato'
+            template_tags = models.execute_kw(db, uid, password, 'sign.template.tag', 'search', [[('name', '=', tag)]])
+            if not template_tags:
+                template_tags = models.execute_kw(db, uid, password, 'sign.template.tag', 'create', [tag])
+            else:
+                template_tags = template_tags[0]
+            print('template_tags', template_tags)
+
 
             # Crear attachment
             attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
@@ -107,7 +129,14 @@ def test_odoo(data: dict):
                     (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id, 'mail_sent_order': 2}),
                 ],
                 'message': data.get('message'),
-                'state': 'sent' # shared, sent, signed, refused, canceled, expired
+                'state': 'sent', # shared, sent, signed, refused, canceled, expired
+                'template_tags': [(6, 0, [template_tags])],
+                'cc_partner_ids': [(6, 0, [cc_partner_id])],
+                'message_partner_ids': [(6, 0, [cc_partner_id])],
+                # 'message_follower_ids': [
+                #     (0, 0, {'partner_id': cc_partner_id}),
+                # ], # 	Seguidores	one2many
+                # 'message_ids': cc_partner_id # 	Mensajes	one2many
 
             }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
@@ -127,3 +156,30 @@ def test_odoo(data: dict):
         return {"error": f"Error de valor: {ve}"}
     except Exception as e:
         return {"error": f"Error desconocido: {str(e)}"}
+
+
+@app.post("/procesar_email")
+async def procesar_email(request: Request):
+    # Leemos el cuerpo del request como texto
+    body = await request.body()
+    
+    # Decodificamos el cuerpo para obtener una cadena de texto
+    content = body.decode('utf-8', errors='ignore')
+
+    # Buscamos id_contrato en el asunto del correo
+    id_contrato_asunto_match = re.search(r"_CTTO_(\d+)", content)
+    print('id_contrato_asunto_match', id_contrato_asunto_match)
+
+    # Extraemos los valores si se encontraron las coincidencias
+    id_contrato = id_contrato_asunto_match.group(1) if id_contrato_asunto_match else None
+    status = "FF" if "se firmó" in content else ("RC" if "rechazó" in content else None)
+    print('id_contrato', id_contrato, 'status', status)
+
+    url = 'https://dev.firmatec.cl/firmas/recepcion_documentos_odoo'
+    response = requests.request("POST", url)
+    print('response', response)
+
+    if not id_contrato or not status:
+        return {"error": "No se pudo extraer id_contrato y/o status del contenido del email."}
+    print( id_contrato, status)
+    return "Email procesado exitosamente."
