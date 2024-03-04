@@ -1,10 +1,13 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi import FastAPI, Request
 from xmlrpc.client import ServerProxy
 import datetime
 import base64
+import re
 import requests
 import json
-import re
+import logging
+import traceback
+import sys
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
 from PyPDF2 import PdfReader
 
@@ -137,17 +140,13 @@ def test_odoo(data: dict):
                 'template_tags': [(6, 0, [template_tags])],
                 'cc_partner_ids': [(6, 0, [cc_partner_id])],
                 'message_partner_ids': [(6, 0, [cc_partner_id])],
-                # 'message_follower_ids': [
-                #     (0, 0, {'partner_id': cc_partner_id}),
-                # ], # 	Seguidores	one2many
-                # 'message_ids': cc_partner_id # 	Mensajes	one2many
 
             }
             request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
             print(request_id)
 
             response = {
-                'template_id': template_id
+                'request_id': request_id
             }
             return response
         else:
@@ -164,31 +163,99 @@ def test_odoo(data: dict):
 
 @app.post("/procesar_email")
 async def procesar_email(request: Request):
-    # Leemos el cuerpo del request como texto
-    body = await request.body()
-    
-    # Decodificamos el cuerpo para obtener una cadena de texto
-    content = body.decode('utf-8', errors='ignore')
+    """
+    Esta función procesa una solicitud de correo electrónico y extrae información relevante.
+    para enviarlo a la URL especificada.
 
-    # Buscamos id_contrato en el asunto del correo
-    id_contrato_asunto_match = re.search(r"_CTTO_(\d+)", content)
-    print('id_contrato_asunto_match', id_contrato_asunto_match)
+    Argumentos:
+        solicitud: la solicitud de correo electrónico entrante.
 
-    # Extraemos los valores si se encontraron las coincidencias
-    id_contrato = id_contrato_asunto_match.group(1) if id_contrato_asunto_match else None
-    status = "FF" if "se firmó" in content else ("RC" if "rechazó" in content else None)
-    print('id_contrato', id_contrato, 'status', status)
+    Devoluciones:
+        Una respuesta JSON que indica éxito o error.
+    """
 
-    url = 'https://dev.firmatec.cl/firmas/recepcion_documentos_odoo'
-    payload = {
-                "contrato_id": id_contrato,
-                "estado_firma": status,
-                }
-    headers = {'Content-Type': 'application/json'}
-    response = requests.request("POST", url, headers=headers, data=json.dumps(payload))
-    print('response', response)
+    try:
+        # Leer el cuerpo de la solicitud como texto
+        body = await request.body()
+        content = body.decode('utf-8', errors='ignore')
 
-    if not id_contrato or not status:
-        return {"error": "No se pudo extraer id_contrato y/o status del contenido del email."}
-    print( id_contrato, status)
-    return "Email procesado exitosamente."
+        # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
+        lines = [line.lower() for line in content.splitlines()]
+
+        # Extraiga el asunto y la referencia en dos pasos combinados utilizando comprensión de listas y cadenas f
+        subject = next((line.split(":")[1].strip() for line in lines if line.startswith("subject:")), None)
+        print('subject', subject)
+        reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0].upper()
+        print('reference', reference)
+
+        # Extraiga la identificación del sujeto usando una expresión regular más concisa
+        id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
+        id_contrato_match = id_contrato_regex.search(subject)
+        id_contrato = id_contrato_match.group(2) if id_contrato_match else None
+        print('id_contrato', id_contrato)
+
+        # Utilice un diccionario y formato de cadena para el estado del mapeo
+        status_mapping = {
+            "se firmó": "FF",
+            "uno de los signatarios rechazó el documento": "RC",
+            "firma contrato": "FT",
+        }
+        # Mapear el estado según el contenido del asunto
+        for condition, mapped_status in status_mapping.items():
+            if condition in subject:
+                status = mapped_status
+                break
+        print('status', status)
+
+        # Verifique los datos requeridos y devuelva el error si falta
+        if not all([id_contrato, status, reference]):
+            return {"error": "No se pudo extraer id_contrato, status y/o reference del cuerpo del email."}
+
+        # Construct the payload with descriptive key names and use f-strings for string interpolation
+        payload = {
+            "contrato_id": id_contrato,
+            "estado_firma": status,
+            "contrato_pdf": traer_documentos(reference),
+        }
+
+        # Envíe la solicitud POST y maneje posibles excepciones
+        url = 'https://dev.firmatec.cl/firmas/recepcion_documentos_odoo'
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()
+
+        return "Email procesado exitosamente."
+
+    except Exception as e:
+        # Registre el error para depurarlo y devolver una respuesta adecuada
+        logging.error(f"Error processing email: {e}")
+        return {"error": "Ocurrió un error al procesar el email."}
+
+
+@app.get("/traer_documentos")
+def traer_documentos(reference):
+    print('reference: ', reference)
+    try:
+        # Autenticación en Odoo
+        common = ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+
+        if uid:
+            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['completed_document']})
+            
+            if contrato_ids:
+                for contrato_id in contrato_ids:
+                    print('contrato', contrato_id)
+                return contrato_ids[0]['completed_document']
+            else:
+                print('No se encontraron documentos')
+                return {"message": "No se encontraron documentos"}
+    except XmlRpcError as xe:
+        traceback.print_exc(file=sys.stderr)
+        return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
+    except Exception as e:
+        traceback.print_exc(file=sys.stderr)
+        return {"error": f"Error desconocido: {e}"}
+
+    return {"message": "Documentos obtenidos exitosamente."}
