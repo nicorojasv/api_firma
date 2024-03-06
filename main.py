@@ -86,7 +86,6 @@ def solicitud_firma(data: dict):
 
         partner_ids = create_partners(signing_parties, uid, password, models)
         print('partner_ids: ',partner_ids)
-        print('partner_ids[0]: ',partner_ids[0])
         tag_id = create_tag(tag, uid, password, models)
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
@@ -126,6 +125,7 @@ def create_partners(signing_parties, uid, password, models):
         # Create partners
         partner_data_1 = signing_parties[0]
         partner_data_2 = signing_parties[1]
+        partners = []
 
         # Consultar si el primer socio ya está registrado
         partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
@@ -149,12 +149,7 @@ def create_partners(signing_parties, uid, password, models):
             # Si no existe, puedes decidir cómo manejar este caso
             cc_partner_id = None
         print('cc_partner_id', cc_partner_id)
-        partners = {
-            'partner_id_1': partner_id_1,
-            'partner_id_2': partner_id_2,
-            'cc_partner_id': cc_partner_id
-        }
-        return partners
+        return [partner_id_1, partner_id_2]
     except:
         return {"error": "Faltan signing_parties requeridos en la solicitud."}
 
