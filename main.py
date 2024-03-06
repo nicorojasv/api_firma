@@ -24,10 +24,10 @@ secret_key = os.getenv("SECRET_KEY")
 algorithm = os.getenv("ALGORITHM")
 
 # Keys de Odoo
-url = os.getenv("URL")
-db = os.getenv("DB")
-username = os.getenv("USERNAME")
-password = os.getenv("PASSWORD")
+url = 'https://integra12.odoo.com/'
+db = 'integra12'
+username = 'soporte@empresasintegra.cl'
+password = 'MN2o24*'
 
 # Clases
 @app.post("/conexion")
