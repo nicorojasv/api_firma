@@ -30,8 +30,19 @@ username = os.getenv("USERNAME")
 password = os.getenv("PASSWORD")
 
 # Clases
+def authenticate(url, db, username, password):
+    """Se autentica con Odoo y devuelve la identificación del usuario si tiene éxito."""
+    common = ServerProxy('{}/xmlrpc/2/common'.format(url))
+    uid = common.authenticate(db, username, password, {})
+
+    if not uid:
+        raise Exception("Authentication failed")  # Manejar el error de autenticación
+
+    return uid  # Devuelve el uid para un posible almacenamiento en caché
+
+
 @app.post("/conexion")
-def solicitud_firma(data, url, db, username, password):
+def solicitud_firma(data: dict, url, db, username, password):
     """
     Esta función crea una solicitud de firma en Odoo basada en los datos proporcionados.
 
@@ -45,63 +56,42 @@ def solicitud_firma(data, url, db, username, password):
     Devoluciones:
         Un diccionario que contiene el ID de la solicitud o un mensaje de error.
     """
+    # print(data)
     try:
         # Autenticación en Odoo
         uid = authenticate(url, db, username, password)
         if not uid:
             return {"error": "Autenticación fallida. Verifica tus credenciales."}
 
-        models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+        validity = datetime.datetime.now() + datetime.timedelta(days=5)
+        # Validación de días (5)
+        validity_date = validity.date()
+        validity_date_str = validity_date.strftime('%Y-%m-%d')
+        print('validez', validity_date_str)
 
-        signing_parties = data.get('SigningParties')
-        redirect_url = data.get('redirect_url')
-        documentos = data.get('document')
-        reference = data.get('reference')
-        reminder = data.get('reminder')
-        message = data.get('message')
-        subject = data.get('subject')
-        pages = data.get('pages')
-        tag = data.get('tag')
-        
+        models = ServerProxy('{}/xmlrpc/2/object'.format(url))
         roles = models.execute_kw(db, uid, password, 'sign.item.role', 'search_read', [[]], {'fields': ['id', 'name']})
         role_mapping = {role['name']: role['id'] for role in roles}
 
-        # 'Cliente' y 'Empleado' son los nombres de los roles en su instancia de Odoo
+        # Assuming 'Customer' and 'Employee' are the names of roles in your Odoo instance
         customer_role_id = role_mapping.get('Customer')
         employee_role_id = role_mapping.get('Employee')
-        
-        partner_ids = create_partners(signing_parties, uid, password, models)
-        tag_id = create_tag(tag, uid, password, models)
-        attachment_id = create_attachment(documentos, uid, password, models)
-        template_id = create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, attachment_id, tag_id, uid, password, models)
-        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids[0], customer_role_id, partner_ids[1], employee_role_id, message, tag_id, partner_ids[3], uid, password, models)
-        
-        return {"request_id": request_id}
 
-    except ConnectionError:
-        return {"error": "Error de conexión a Odoo. Verifica la URL."}
-    except XmlRpcError as xe:
-        return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
-    except ValueError as ve:
-        return {"error": f"Error de valor: {ve}"}
-    except Exception as e:
-        return {"error": f"Error desconocido: {str(e)}"}
+        # DATA
+        # Obtener los SigningParties de los datos recibidos
+        signing_parties = data.get('SigningParties')
+        print('signing_parties', signing_parties)
 
+        #obetener contrato id
+        redirect_url = data.get('redirect_url')
 
-def authenticate(url, db, username, password):
-    """Se autentica con Odoo y devuelve la identificación del usuario si tiene éxito."""
-    common = ServerProxy('{}/xmlrpc/2/common'.format(url))
-    uid = common.authenticate(db, username, password, {})
+        # obtener documento
+        documentos = data.get('document')
+        subject = data.get('subject')
+        print('subject', subject)
+        pages = data.get('pages')
+        print('pages', pages)
 
-    if not uid:
-        raise Exception("Authentication failed")  # Manejar el error de autenticación
-
-    return uid  # Devuelve el uid para un posible almacenamiento en caché
-
-
-def create_partners(signing_parties, uid, password, models):
-    """Función de creación de partners"""
-    try:
         # Create partners
         partner_data_1 = signing_parties[0]
         partner_data_2 = signing_parties[1]
@@ -128,93 +118,75 @@ def create_partners(signing_parties, uid, password, models):
             # Si no existe, puedes decidir cómo manejar este caso
             cc_partner_id = None
         print('cc_partner_id', cc_partner_id)
-        partners = {
-            'partner_id_1': partner_id_1,
-            'partner_id_2': partner_id_2,
-            'cc_partner_id': cc_partner_id
+
+        # Etiquetas
+        # Consultar si el primer socio ya está registrado
+        tag = 'Contrato'
+        template_tags = models.execute_kw(db, uid, password, 'sign.template.tag', 'search', [[('name', '=', tag)]])
+        if not template_tags:
+            template_tags = models.execute_kw(db, uid, password, 'sign.template.tag', 'create', [tag])
+        else:
+            template_tags = template_tags[0]
+        print('template_tags', template_tags)
+
+
+        # Crear attachment
+        attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
+        attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
+
+        # Crear template
+        template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
+
+        for firmante in signing_parties:
+            for page in pages:  # Iterate through the desired pages list
+                if firmante['display_name'] == 'Trabajador':
+                    template_data['sign_item_ids'].append(
+                        (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                                'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                    )
+                elif firmante['display_name'] == 'Empleador':
+                    template_data['sign_item_ids'].append(
+                        (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                                'page': page, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                    )
+
+        template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
+        print('hola')
+
+        # Crear signature request
+        request_data = {
+            'template_id': template_id,
+            'subject': subject,
+            'reference': data.get('reference'),
+            'reminder': 1,
+            'validity': validity_date_str,
+            # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
+            'request_item_ids': [
+                (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id, 'mail_sent_order': 1}), 
+                (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id, 'mail_sent_order': 2}),
+            ],
+            'message': data.get('message'),
+            'state': 'sent', # shared, sent, signed, refused, canceled, expired
+            'template_tags': [(6, 0, [template_tags])],
+            'cc_partner_ids': [(6, 0, [cc_partner_id])],
+            'message_partner_ids': [(6, 0, [cc_partner_id])],
+
         }
-        return partners
-    except:
-        return {"error": "Faltan signing_parties requeridos en la solicitud."}
+        request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
+        print(request_id)
 
-
-def create_tag(tag, uid, password, models):
-    """Función de creación de etiquetas"""
-    # Tag management template_tags
-    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    tag_id = models.execute_kw(db, uid, password, 'sign.template.tag', 'search', [[('name', '=', tag)]])
-    if not tag_id:
-        tag_id = models.execute_kw(db, uid, password, 'sign.template.tag', 'create', [tag])
-    else:
-        tag_id = tag_id[0]
-    print('tag_id', tag_id)
-
-
-def create_attachment(documentos, uid, password, models):
-    """Función de creación de attachments"""
-    # Crear Attachment
-    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
-    attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
-
-
-def create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
-    """Función de creación de templates"""
-    # Crear template
-    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
-
-    for firmante in signing_parties:
-        for page in pages:  # Iterate through the desired pages list
-            if firmante['display_name'] == 'Trabajador':
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-            elif firmante['display_name'] == 'Empleador':
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-
-    template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
-    print('hola')
-
-
-def create_signature_request(template_id, subject, reference, reminder, partner_id_1, customer_role_id, partner_id_2, employee_role_id, message, template_tags, cc_partner_id, uid, password, models):
-    """Función de creación de requests de firma"""
-    # Validación de días (5)
-    validity = datetime.datetime.now() + datetime.timedelta(days=5)
-    validity_date = validity.date()
-    validity_date_str = validity_date.strftime('%Y-%m-%d')
-    print('validez', validity_date_str)
-            
-    # Crear signature request
-    request_data = {
-        'template_id': template_id,
-        'subject': subject,
-        'reference': reference,
-        'reminder': reminder,
-        'validity': validity_date_str,
-        # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
-        'request_item_ids': [
-            (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id, 'mail_sent_order': 1}), 
-            (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id, 'mail_sent_order': 2}),
-        ],
-        'message': message,
-        'state': 'sent', # shared, sent, signed, refused, canceled, expired
-        'template_tags': [(6, 0, [template_tags])],
-        'cc_partner_ids': [(6, 0, [cc_partner_id])],
-        'message_partner_ids': [(6, 0, [cc_partner_id])],
-
-    }
-    request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
-    print(request_id)
-
-    response = {
-        'request_id': request_id
-    }
-    return response
+        response = {
+            'request_id': request_id
+        }
+        return response
+    except ConnectionError:
+        return {"error": "Error de conexión a Odoo. Verifica la URL."}
+    except XmlRpcError as xe:
+        return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
+    except ValueError as ve:
+        return {"error": f"Error de valor: {ve}"}
+    except Exception as e:
+        return {"error": f"Error desconocido: {str(e)}"}
 
 
 @app.post("/procesar_email")
