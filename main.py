@@ -92,7 +92,7 @@ def solicitud_firma(data: dict):
         print('attachment_id: ',attachment_id)
         template_id = create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models)
         print('template_id: ',template_id)
-        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids[0], customer_role_id, partner_ids[1], employee_role_id, message, tag_id, partner_ids[3], uid, password, models)
+        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models)
 
         return {"request_id": request_id}
 
@@ -149,7 +149,7 @@ def create_partners(signing_parties, uid, password, models):
             # Si no existe, puedes decidir cómo manejar este caso
             cc_partner_id = None
         print('cc_partner_id', cc_partner_id)
-        return [partner_id_1, partner_id_2]
+        return [partner_id_1, partner_id_2, cc_partner_id]
     except:
         return {"error": "Faltan signing_parties requeridos en la solicitud."}
 
@@ -205,7 +205,7 @@ def create_template(subject, redirect_url, attachment_id, signing_parties, pages
     return template_id
 
 
-def create_signature_request(template_id, subject, reference, reminder, partner_id_1, customer_role_id, partner_id_2, employee_role_id, message, template_tags, cc_partner_id, uid, password, models):
+def create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models):
     print('signature')
     """Función de creación de requests de firma"""
     # Validación de días (5)
@@ -223,14 +223,14 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         'validity': validity_date_str,
         # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
         'request_item_ids': [
-            (0, 0, {'partner_id': partner_id_1, 'role_id': customer_role_id, 'mail_sent_order': 1}), 
-            (0, 0, {'partner_id': partner_id_2, 'role_id': employee_role_id, 'mail_sent_order': 2}),
+            (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
+            (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2}),
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
-        'template_tags': [(6, 0, [template_tags])],
-        'cc_partner_ids': [(6, 0, [cc_partner_id])],
-        'message_partner_ids': [(6, 0, [cc_partner_id])],
+        'template_tags': [(6, 0, [tag_id])],
+        'cc_partner_ids': [(6, 0, [partner_ids[2]])],
+        'message_partner_ids': [(6, 0, [partner_ids[2]])],
 
     }
     request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
