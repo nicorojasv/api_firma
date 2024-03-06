@@ -31,12 +31,14 @@ password = os.getenv("PASSWORD")
 
 # Clases
 @app.post("/conexion")
-def test_odoo(data: dict):
-    # print(data)
+def test_odoo(data: dict, url, db, username, password):
+    print('conex')
+    print(data)
     try:
         # Authentication in Odoo
         common = ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
+        print('bien')
         validity = datetime.datetime.now() + datetime.timedelta(days=5)
 
         if uid:
