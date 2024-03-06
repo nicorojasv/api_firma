@@ -87,7 +87,7 @@ def solicitud_firma(data: dict):
         partner_ids = create_partners(signing_parties, uid, password, models)
         tag_id = create_tag(tag, uid, password, models)
         attachment_id = create_attachment(documentos, uid, password, models)
-        template_id = create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, attachment_id, tag_id, uid, password, models)
+        template_id = create_template(subject, redirect_url, attachment_id, partner_ids, pages, customer_role_id, employee_role_id, attachment_id, tag_id, uid, password, models)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids[0], customer_role_id, partner_ids[1], employee_role_id, message, tag_id, partner_ids[3], uid, password, models)
 
         return {"request_id": request_id}
@@ -166,6 +166,7 @@ def create_tag(tag, uid, password, models):
     else:
         tag_id = tag_id[0]
     print('tag_id', tag_id)
+    return tag_id
 
 
 def create_attachment(documentos, uid, password, models):
@@ -176,16 +177,17 @@ def create_attachment(documentos, uid, password, models):
     attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
     attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
     print('creo')
+    return attachment_id
 
 
-def create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
+def create_template(subject, redirect_url, attachment_id, partner_ids, pages, customer_role_id, employee_role_id, uid, password, models):
     print('templat')
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
     template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
 
-    for firmante in signing_parties:
+    for firmante in partner_ids:
         for page in pages:  # Iterate through the desired pages list
             if firmante['display_name'] == 'Trabajador':
                 template_data['sign_item_ids'].append(
@@ -200,6 +202,7 @@ def create_template(subject, redirect_url, attachment_id, signing_parties, pages
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('hola')
+    return template_id
 
 
 def create_signature_request(template_id, subject, reference, reminder, partner_id_1, customer_role_id, partner_id_2, employee_role_id, message, template_tags, cc_partner_id, uid, password, models):
