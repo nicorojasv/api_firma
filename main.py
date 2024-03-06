@@ -20,18 +20,19 @@ from PyPDF2 import PdfReader
 app = FastAPI()
 
 # Keys de JWT
-secret_key = "WCTi4FvUmr891sNzASFDwi85Ri7gR8a0DSF9d2l59UbDKEMts"
-algorithm = "HS256"
+secret_key = os.getenv("SECRET_KEY")
+algorithm = os.getenv("ALGORITHM")
 
 # Keys de Odoo
-url = 'https://integra12.odoo.com/'
-db = 'integra12'
-username = 'soporte@empresasintegra.cl'
-password = 'MN2o24*'
+url = os.getenv("URL")
+db = os.getenv("DB")
+username = os.getenv("USERNAME")
+password = os.getenv("PASSWORD")
 
 # Clases
 @app.post("/conexion")
 def solicitud_firma(data: dict, url, db, username, password):
+    print('conex')
     """
     Esta función crea una solicitud de firma en Odoo basada en los datos proporcionados.
 
@@ -48,20 +49,30 @@ def solicitud_firma(data: dict, url, db, username, password):
     try:
         # Autenticación en Odoo
         uid = authenticate(url, db, username, password)
+        print('bien ')
         if not uid:
             return {"error": "Autenticación fallida. Verifica tus credenciales."}
 
         models = ServerProxy('{}/xmlrpc/2/object'.format(url))
 
         signing_parties = data.get('SigningParties')
+        print('signing_parties: ',signing_parties)
         redirect_url = data.get('redirect_url')
+        print('redirect_url: ',redirect_url)
         documentos = data.get('document')
+        print('documentos: ',documentos)
         reference = data.get('reference')
+        print('reference: ',reference)
         reminder = data.get('reminder')
+        print('reminder: ',reminder)
         message = data.get('message')
+        print('message: ',message)
         subject = data.get('subject')
+        print('subject: ',subject)
         pages = data.get('pages')
+        print('pages: ',pages)
         tag = data.get('tag')
+        print('tag: ',tag)
         
         roles = models.execute_kw(db, uid, password, 'sign.item.role', 'search_read', [[]], {'fields': ['id', 'name']})
         role_mapping = {role['name']: role['id'] for role in roles}
@@ -89,6 +100,7 @@ def solicitud_firma(data: dict, url, db, username, password):
 
 
 def authenticate(url, db, username, password):
+    print('autent')
     """Se autentica con Odoo y devuelve la identificación del usuario si tiene éxito."""
     common = ServerProxy('{}/xmlrpc/2/common'.format(url))
     uid = common.authenticate(db, username, password, {})
@@ -100,6 +112,7 @@ def authenticate(url, db, username, password):
 
 
 def create_partners(signing_parties, uid, password, models):
+    print('partne')
     """Función de creación de partners"""
     try:
         # Create partners
@@ -139,6 +152,8 @@ def create_partners(signing_parties, uid, password, models):
 
 
 def create_tag(tag, uid, password, models):
+    print('tag')
+    print('tag: ',tag)
     """Función de creación de etiquetas"""
     # Tag management template_tags
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
@@ -148,17 +163,21 @@ def create_tag(tag, uid, password, models):
     else:
         tag_id = tag_id[0]
     print('tag_id', tag_id)
+    return tag_id
 
 
 def create_attachment(documentos, uid, password, models):
+    print('attach')
     """Función de creación de attachments"""
     # Crear Attachment
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
     attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
     attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
+    return attachment_id
 
 
 def create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
+    print('templat')
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
@@ -182,6 +201,7 @@ def create_template(subject, redirect_url, attachment_id, signing_parties, pages
 
 
 def create_signature_request(template_id, subject, reference, reminder, partner_id_1, customer_role_id, partner_id_2, employee_role_id, message, template_tags, cc_partner_id, uid, password, models):
+    print('signature')
     """Función de creación de requests de firma"""
     # Validación de días (5)
     validity = datetime.datetime.now() + datetime.timedelta(days=5)
@@ -299,18 +319,17 @@ def traer_documentos(reference):
             contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['completed_document']})
             
             if contrato_ids:
-                for contrato_id in contrato_ids:
-                    print('contrato firmado en base64')
                 # Solo documento firmado en base64
+                print('documento firmado en base64')
                 return contrato_ids[0]['completed_document']
             else:
                 print('No se encontraron documentos')
                 return {"message": "No se encontraron documentos"}
+        else:
+            return {"error": "Autenticación fallida. Verifica tus credenciales."}
     except XmlRpcError as xe:
         traceback.print_exc(file=sys.stderr)
         return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
     except Exception as e:
         traceback.print_exc(file=sys.stderr)
         return {"error": f"Error desconocido: {e}"}
-
-    return {"message": "Documentos obtenidos exitosamente."}
