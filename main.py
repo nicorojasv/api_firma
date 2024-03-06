@@ -64,7 +64,6 @@ def solicitud_firma(data: dict):
         redirect_url = data.get('redirect_url')
         print('redirect_url: ',redirect_url)
         documentos = data.get('document')
-        print('documentos: ',documentos)
         reference = data.get('reference')
         print('reference: ',reference)
         reminder = data.get('reminder')
@@ -167,7 +166,6 @@ def create_tag(tag, uid, password, models):
     else:
         tag_id = tag_id[0]
     print('tag_id', tag_id)
-    return tag_id
 
 
 def create_attachment(documentos, uid, password, models):
@@ -177,7 +175,7 @@ def create_attachment(documentos, uid, password, models):
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
     attachment = {'name': documentos, 'datas': documentos, 'type': 'binary'}
     attachment_id = models.execute_kw(db, uid, password, 'ir.attachment', 'create', [attachment])
-    return attachment_id
+    print('creo')
 
 
 def create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
