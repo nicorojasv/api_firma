@@ -31,7 +31,7 @@ password = 'MN2o24*'
 
 # Clases
 @app.post("/conexion")
-def solicitud_firma(data: dict, url, db, username, password):
+def solicitud_firma(data: dict):
     print('conex')
     """
     Esta función crea una solicitud de firma en Odoo basada en los datos proporcionados.
