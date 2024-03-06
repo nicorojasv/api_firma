@@ -90,7 +90,7 @@ def solicitud_firma(data: dict):
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
         print('attachment_id: ',attachment_id)
-        template_id = create_template(subject, redirect_url, attachment_id, partner_ids, pages, customer_role_id, employee_role_id, attachment_id, tag_id, uid, password, models)
+        template_id = create_template(subject, redirect_url, attachment_id, partner_ids, pages, customer_role_id, employee_role_id, uid, password, models)
         print('template_id: ',template_id)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids[0], customer_role_id, partner_ids[1], employee_role_id, message, tag_id, partner_ids[3], uid, password, models)
 
