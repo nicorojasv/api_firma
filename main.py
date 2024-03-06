@@ -86,6 +86,7 @@ def solicitud_firma(data: dict):
 
         partner_ids = create_partners(signing_parties, uid, password, models)
         print('partner_ids: ',partner_ids)
+        print('partner_ids[0]: ',partner_ids[0])
         tag_id = create_tag(tag, uid, password, models)
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
@@ -186,12 +187,13 @@ def create_attachment(documentos, uid, password, models):
 
 def create_template(subject, redirect_url, attachment_id, partner_ids, pages, customer_role_id, employee_role_id, uid, password, models):
     print('templat')
+    print('templat')
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
     template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
 
-    for firmante in partner_ids:
+    for firmante in int(partner_ids):
         for page in pages:  # Iterate through the desired pages list
             if firmante['display_name'] == 'Trabajador':
                 template_data['sign_item_ids'].append(
