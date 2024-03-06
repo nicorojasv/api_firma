@@ -20,8 +20,8 @@ from PyPDF2 import PdfReader
 app = FastAPI()
 
 # Keys de JWT
-secret_key = os.getenv("SECRET_KEY")
-algorithm = os.getenv("ALGORITHM")
+secret_key = "WCTi4FvUmr891sNzASFDwi85Ri7gR8a0DSF9d2l59UbDKEMts"
+algorithm = "HS256"
 
 # Keys de Odoo
 url = 'https://integra12.odoo.com/'
