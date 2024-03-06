@@ -16,6 +16,10 @@ import sys
 from fastapi import FastAPI, Request
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
 from PyPDF2 import PdfReader
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 app = FastAPI()
 
@@ -31,7 +35,7 @@ password = os.getenv("PASSWORD")
 
 # Clases
 @app.post("/conexion")
-def solicitud_firma(data: dict, url, db, username, password):
+def solicitud_firma(data: dict):
     print('conex')
     """
     Esta función crea una solicitud de firma en Odoo basada en los datos proporcionados.
