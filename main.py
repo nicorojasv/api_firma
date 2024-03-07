@@ -61,8 +61,8 @@ def solicitud_firma(data: dict):
 
         signing_parties = data.get('SigningParties')
         print('signing_parties: ',signing_parties)
-        redirect_url = data.get('redirect_url')
-        print('redirect_url: ',redirect_url)
+        # redirect_url = data.get('redirect_url')
+        # print('redirect_url: ',redirect_url)
         documentos = data.get('document')
         reference = data.get('reference')
         print('reference: ',reference)
@@ -90,7 +90,7 @@ def solicitud_firma(data: dict):
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
         print('attachment_id: ',attachment_id)
-        template_id = create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models)
+        template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models)
         print('template_id: ',template_id)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models)
 
@@ -125,7 +125,6 @@ def create_partners(signing_parties, uid, password, models):
         # Create partners
         partner_data_1 = signing_parties[0]
         partner_data_2 = signing_parties[1]
-        partners = []
 
         # Consultar si el primer socio ya está registrado
         partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
@@ -180,12 +179,12 @@ def create_attachment(documentos, uid, password, models):
     return attachment_id
 
 
-def create_template(subject, redirect_url, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
+def create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
     print('templat')
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    template_data = {'name': subject, 'redirect_url': redirect_url, 'attachment_id': attachment_id, 'sign_item_ids': []}
+    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': []}
 
     for firmante in signing_parties:
         for page in pages:  # Iterate through the desired pages list
