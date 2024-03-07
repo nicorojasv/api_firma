@@ -294,7 +294,9 @@ async def procesar_email(request: Request):
         payload = {
             "contrato_id": id_contrato,
             "estado_firma": status,
-            "contrato_pdf": traer_documentos(reference),
+            "referencia": reference,
+            "contrato_pdf": traer_documentos(reference, 'contrato'),
+            "certificado_pdf": traer_documentos(reference, 'certificado'),
         }
 
         # Envíe la solicitud POST y maneje posibles excepciones
@@ -312,7 +314,7 @@ async def procesar_email(request: Request):
 
 
 @app.get("/traer_documentos")
-def traer_documentos(reference):
+def traer_documentos(reference, tipo_documento):
     print('reference: ', reference)
     try:
         # Autenticación en Odoo
@@ -320,14 +322,17 @@ def traer_documentos(reference):
 
         if uid:
             models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['completed_document']})
+            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]] )
+            
             if contrato_ids:
+                certificado = models.execute_kw(db, uid, password, 'ir.attachment', 'search_read', [[('id', '=', contrato_ids[0]['completed_document_attachment_ids'])]], {'fields': ['name', 'datas']})
                 # Solo documento firmado en base64
-                print('documento firmado en base64')
-                return contrato_ids[0]['completed_document']
-            else:
-                print('No se encontraron documentos')
-                return {"message": "No se encontraron documentos"}
+                if tipo_documento == 'certificado':
+                    return certificado[0]['datas']
+                if tipo_documento == 'contrato':
+                    return certificado[1]['datas']
+                else:
+                    return {"message": "No se encontraron documentos"}
         else:
             return {"error": "Autenticación fallida. Verifica tus credenciales."}
     except XmlRpcError as xe:
