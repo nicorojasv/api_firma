@@ -224,7 +224,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
         'request_item_ids': [
             (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
-            (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2}),
+            (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2, 'state':'completed'}),
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
@@ -357,3 +357,23 @@ def traer_documentos(reference, tipo_documento):
         return {"error": f"Error desconocido: {e}"}
 
     return {"message": "Documentos obtenidos exitosamente."}
+
+
+@app.get("/otra")
+def otra():
+    try:
+        # Autenticación en Odoo
+        uid = authenticate(url, db, username, password)
+        if uid:
+            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', 197)]], {'fields': ['request_item_ids']})
+            firma = models.execute_kw(db, uid, password, 'sign.request.item', 'search_read', [[('id', '=', contrato_ids[0]['request_item_ids'][0])]], {'fields': ['state']})
+            print('firma', firma)
+            print('otra', contrato_ids[0]['request_item_ids'])
+            print('otra', contrato_ids[0]['request_item_ids'][0])
+            print('otra', contrato_ids[0]['request_item_ids'][1])
+            return firma
+
+
+    except Exception as e:
+        print(e)
