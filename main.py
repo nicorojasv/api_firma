@@ -17,6 +17,11 @@ from fastapi import FastAPI, Request
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
+from email.header import decode_header
+
+# Sendgrid para envio de correos 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -140,7 +145,7 @@ def create_partners(signing_parties, uid, password, models):
             partner_id_2 = partner_id_2[0]
         print('firmantes')
         # Obtener el ID del socio con la dirección de correo electrónico 'test@krino.ai'
-        cc_partner_email = 'jmansillamo@gmail.com'
+        cc_partner_email = 'test@krino.ai'
         cc_partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', cc_partner_email)]])
         if cc_partner_id:
             cc_partner_id = cc_partner_id[0]
@@ -198,12 +203,6 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
-            else:
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': 'Javier',
-                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.3, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-            
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('hola')
@@ -230,7 +229,6 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         'request_item_ids': [
             (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
             (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2}),
-            (0, 0, {'partner_id': partner_ids[2], 'role_id': employee_role_id, 'mail_sent_order': 3}),
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
@@ -263,14 +261,22 @@ async def procesar_email(request: Request):
     try:
         # Leer el cuerpo de la solicitud como texto
         body = await request.body()
-        content = body.decode('utf-8', errors='ignore')
+        # print('body', body)
+        content = body.decode('utf-8')
+        
+        print('content', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
         lines = [line.lower() for line in content.splitlines()]
 
         # Extraiga el asunto y la referencia en dos pasos combinados utilizando comprensión de listas y cadenas f
         subject = next((line.split(":")[1].strip() for line in lines if line.startswith("subject:")), None)
-        print('subject', subject)
+        if subject is not None:
+            # Decodifica la cadena del asunto utilizando la biblioteca `email`
+            subject, encoding = decode_header(subject)[0]
+            if encoding is not None:
+                subject = subject.decode(encoding)
+            print('subject', subject)
         reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0].upper()
         print('reference', reference)
 
@@ -282,7 +288,7 @@ async def procesar_email(request: Request):
 
         # Utilice un diccionario y formato de cadena para el estado del mapeo
         status_mapping = {
-            "se firmó": "FF",
+            "se firm": "FF",
             "uno de los signatarios rechazó el documento": "RC",
             "firma contrato": "FT",
         }
@@ -301,16 +307,18 @@ async def procesar_email(request: Request):
         payload = {
             "contrato_id": id_contrato,
             "estado_firma": status,
-            "referencia": reference,
-            "contrato_pdf": traer_documentos(reference, 'contrato'),
-            "certificado_pdf": traer_documentos(reference, 'certificado'),
+            "reference": reference,
+            "contrato_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
+            "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
         }
 
         # Envíe la solicitud POST y maneje posibles excepciones
         url_notificaciones = os.getenv("URL_NOTIFICACIONES")
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url_notificaciones, headers=headers, data=json.dumps(payload))
+        print('response', response)
         response.raise_for_status()
+        print('response último', response)
 
         return "Email procesado exitosamente."
 
@@ -322,14 +330,15 @@ async def procesar_email(request: Request):
 
 @app.get("/traer_documentos")
 def traer_documentos(reference, tipo_documento):
-    print('reference: ', reference)
+    print('reference: ', reference )
     try:
         # Autenticación en Odoo
         uid = authenticate(url, db, username, password)
 
         if uid:
             models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]] )
+            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['completed_document_attachment_ids']} )
+            print ('que trae esto',contrato_ids[0]['completed_document_attachment_ids'])
             
             if contrato_ids:
                 certificado = models.execute_kw(db, uid, password, 'ir.attachment', 'search_read', [[('id', '=', contrato_ids[0]['completed_document_attachment_ids'])]], {'fields': ['name', 'datas']})
@@ -337,14 +346,34 @@ def traer_documentos(reference, tipo_documento):
                 if tipo_documento == 'certificado':
                     return certificado[0]['datas']
                 if tipo_documento == 'contrato':
+                    print ('Bien')
                     return certificado[1]['datas']
                 else:
                     return {"message": "No se encontraron documentos"}
-        else:
-            return {"error": "Autenticación fallida. Verifica tus credenciales."}
+            else:
+                print('No se encontraron documentos')
+                return {"message": "No se encontraron documentos"}
     except XmlRpcError as xe:
         traceback.print_exc(file=sys.stderr)
         return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
     except Exception as e:
         traceback.print_exc(file=sys.stderr)
         return {"error": f"Error desconocido: {e}"}
+
+    return {"message": "Documentos obtenidos exitosamente."}
+
+os.environ['SENDGRID_API_KEY'] = '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'
+def send_email_with_sendgrid(email_content, email_subject):
+    sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+    email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
+    message = Mail(
+        from_email='notificaciones@firmatec.xyz',  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
+        to_emails="jmansillamo@gmail.com",  # Destinatario del correo
+        subject=f'Reenviado: {email_subject}',
+        html_content=email_body
+    )
+    try:
+        response = sg.send(message)
+        print(f"Correo reenviado con éxito. Código de estado: {response.status_code}")
+    except Exception as e:
+        print(f"Error al enviar correo con SendGrid: {e}")
