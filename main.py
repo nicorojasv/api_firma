@@ -19,10 +19,6 @@ from PyPDF2 import PdfReader
 from dotenv import load_dotenv
 from email.header import decode_header
 
-# Sendgrid para envio de correos 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
@@ -361,19 +357,3 @@ def traer_documentos(reference, tipo_documento):
         return {"error": f"Error desconocido: {e}"}
 
     return {"message": "Documentos obtenidos exitosamente."}
-
-os.environ['SENDGRID_API_KEY'] = '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'
-def send_email_with_sendgrid(email_content, email_subject):
-    sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
-    email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
-    message = Mail(
-        from_email='notificaciones@firmatec.xyz',  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
-        to_emails="jmansillamo@gmail.com",  # Destinatario del correo
-        subject=f'Reenviado: {email_subject}',
-        html_content=email_body
-    )
-    try:
-        response = sg.send(message)
-        print(f"Correo reenviado con éxito. Código de estado: {response.status_code}")
-    except Exception as e:
-        print(f"Error al enviar correo con SendGrid: {e}")
