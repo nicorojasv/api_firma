@@ -140,7 +140,7 @@ def create_partners(signing_parties, uid, password, models):
             partner_id_2 = partner_id_2[0]
         print('firmantes')
         # Obtener el ID del socio con la dirección de correo electrónico 'test@krino.ai'
-        cc_partner_email = 'test@krino.ai'
+        cc_partner_email = 'jmansillamo@gmail.com'
         cc_partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', cc_partner_email)]])
         if cc_partner_id:
             cc_partner_id = cc_partner_id[0]
@@ -224,6 +224,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         'request_item_ids': [
             (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
             (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2}),
+            (0, 0, {'partner_id': partner_ids[2], 'role_id': employee_role_id, 'mail_sent_order': 3}),
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
