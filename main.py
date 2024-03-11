@@ -198,6 +198,12 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': employee_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+            else:
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': 'Javier',
+                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.3, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+            
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('hola')
