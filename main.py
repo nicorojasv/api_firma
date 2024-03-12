@@ -19,6 +19,10 @@ from PyPDF2 import PdfReader
 from dotenv import load_dotenv
 from email.header import decode_header
 
+# Sendgrid para envio de correos 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
@@ -224,7 +228,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         # 'attachment_ids': [(6, 0, attachment_ids)],  # Utilizar todos los IDs de adjuntos
         'request_item_ids': [
             (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
-            (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2, 'state':'completed'}),
+            (0, 0, {'partner_id': partner_ids[1], 'role_id': employee_role_id, 'mail_sent_order': 2}),
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
@@ -275,6 +279,27 @@ async def procesar_email(request: Request):
             print('subject', subject)
         reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0].upper()
         print('reference', reference)
+        # Obtener el destinatario
+        recipient = None
+        for line in content.splitlines():
+            if line.lower().startswith("x-yourorg-mailscanner-from:"):
+                recipient = line.split(":")[1].strip()
+                break
+
+        # Imprimir los resultados
+        if subject and recipient:
+            print(f"Asunto: {subject}")
+            print(f"Destinatario: {recipient}")
+        else:
+            print("No se pudo encontrar el asunto o el destinatario.")
+
+
+        email_content = content # Obtener el contenido del cuerpo del correo desde la solicitud
+        email_subject = subject  # Define el asunto del correo aquí
+        sender_email = recipient  # Define el correo del remitente aquí
+
+
+        send_email_with_sendgrid(sender_email,email_content, email_subject)
 
         # Extraiga la identificación del sujeto usando una expresión regular más concisa
         id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
@@ -359,21 +384,21 @@ def traer_documentos(reference, tipo_documento):
     return {"message": "Documentos obtenidos exitosamente."}
 
 
-@app.get("/otra")
-def otra():
+def send_email_with_sendgrid(sender_email,email_content, email_subject):
+    sg = SendGridAPIClient(api_key='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')
+    email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
+    sender_email.replace("@firmatec.xyz", "@empresasintegra.cl")
+    message = Mail(
+        from_email='notificaciones@firmatec.xyz' ,  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
+        to_emails= sender_email,  # Destinatario del correo
+        subject=f'Reenviado: {email_subject}',
+        html_content=email_body
+    )
     try:
-        # Autenticación en Odoo
-        uid = authenticate(url, db, username, password)
-        if uid:
-            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', 197)]], {'fields': ['request_item_ids']})
-            firma = models.execute_kw(db, uid, password, 'sign.request.item', 'search_read', [[('id', '=', contrato_ids[0]['request_item_ids'][0])]], {'fields': ['state']})
-            print('firma', firma)
-            print('otra', contrato_ids[0]['request_item_ids'])
-            print('otra', contrato_ids[0]['request_item_ids'][0])
-            print('otra', contrato_ids[0]['request_item_ids'][1])
-            return firma
-
-
+        response = sg.send(message)
+        print(f"Correo reenviado con éxito. Código de estado: {response.status_code}")
     except Exception as e:
-        print(e)
+        print(f"Error al enviar correo con SendGrid: {e}")
+
+
+
