@@ -264,7 +264,6 @@ async def procesar_email(request: Request):
         # print('body', body)
         content = body.decode('utf-8')
         
-        print('content', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
         lines = [line.lower() for line in content.splitlines()]
@@ -278,7 +277,6 @@ async def procesar_email(request: Request):
                 subject = subject.decode(encoding)
             print('subject', subject)
         reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0].upper()
-        print('reference', reference)
         # Obtener el destinatario
         recipient = None
         for line in content.splitlines():
@@ -292,6 +290,8 @@ async def procesar_email(request: Request):
             print(f"Destinatario: {recipient}")
         else:
             print("No se pudo encontrar el asunto o el destinatario.")
+            print(f"Asunto: {subject}")
+            print(f"Destinatario: {recipient}")
 
 
         email_content = content # Obtener el contenido del cuerpo del correo desde la solicitud
