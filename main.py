@@ -385,7 +385,7 @@ def traer_documentos(reference, tipo_documento):
 
 
 def send_email_with_sendgrid(sender_email,email_content, email_subject):
-    sg = SendGridAPIClient(api_key=password = os.getenv("API")
+    sg = SendGridAPIClient(api_key= os.getenv("API")
 )
     email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
     sender_email.replace("@firmatec.xyz", "@empresasintegra.cl")
