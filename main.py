@@ -281,8 +281,9 @@ async def procesar_email(request: Request):
         recipient = None
         for line in content.splitlines():
             if line.lower().startswith("to"):
-                recipient = line.split(":")[1].strip()
-                break
+                match = re.search(r'<([^>]*)>', line)
+                if match:
+                    recipient = match.group(1)
 
         # Imprimir los resultados
         if subject and recipient:
