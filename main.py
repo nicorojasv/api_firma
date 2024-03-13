@@ -263,7 +263,7 @@ async def procesar_email(request: Request):
         body = await request.body()
         # print('body', body)
         content = body.decode('utf-8')
-        print('content', content)
+        print('contenidoooo', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
         lines = [line.lower() for line in content.splitlines()]
@@ -280,7 +280,7 @@ async def procesar_email(request: Request):
         # Obtener el destinatario
         recipient = None
         for line in content.splitlines():
-            if line.lower().startswith("x-yourorg-mailscanner-from:"):
+            if line.lower().startswith("to"):
                 recipient = line.split(":")[1].strip()
                 break
 
