@@ -291,8 +291,7 @@ async def procesar_email(request: Request):
             print(f"Destinatario: {recipient}")
         else:
             print("No se pudo encontrar el asunto o el destinatario.")
-            print(f"Asunto: {subject}")
-            print(f"Destinatario: {recipient}")
+ 
 
 
         email_content = content # Obtener el contenido del cuerpo del correo desde la solicitud
@@ -386,8 +385,10 @@ def traer_documentos(reference, tipo_documento):
 
 
 def send_email_with_sendgrid(sender_email,email_content, email_subject):
-    sg = SendGridAPIClient(api_key= os.getenv("API")
-)
+    print('api key', os.getenv("API"))
+    sg = SendGridAPIClient(api_key=os.getenv("API"))
+    print('sg', sg)                 
+
     email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
     sender_email.replace("@firmatec.xyz", "@empresasintegra.cl")
     message = Mail(
