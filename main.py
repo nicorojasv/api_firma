@@ -398,6 +398,7 @@ def send_email_with_sendgrid(sender_email,email_content, email_subject):
 
     email= []
     email.append(sender_email.replace("@firmatec.xyz", "@empresasintegra.cl"))
+    email.append('soporte@empresasintegra.cl')
 
 
     # Expresión regular para encontrar el texto que deseas
