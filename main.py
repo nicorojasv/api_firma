@@ -324,14 +324,23 @@ async def procesar_email(request: Request):
         if not all([id_contrato, status, reference]):
             return {"error": "No se pudo extraer id_contrato, status y/o reference del cuerpo del email."}
 
-        # Construct the payload with descriptive key names and use f-strings for string interpolation
-        payload = {
-            "contrato_id": id_contrato,
-            "estado_firma": status,
-            "reference": reference,
-            "contrato_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
-            "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
-        }
+        if status == 'FF':
+            # Construct the payload with descriptive key names and use f-strings for string interpolation
+            payload = {
+                "contrato_id": id_contrato,
+                "estado_firma": status,
+                "reference": reference,
+                "contrato_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
+                "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
+            }
+        else:
+            payload = {
+                "contrato_id": id_contrato,
+                "estado_firma": status,
+                "reference": reference,
+                "contrato_pdf": None,
+                "certificado_pdf": None,
+            }
 
         # Envíe la solicitud POST y maneje posibles excepciones
         url_notificaciones = os.getenv("URL_NOTIFICACIONES")
