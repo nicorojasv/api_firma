@@ -385,17 +385,32 @@ def traer_documentos(reference, tipo_documento):
 
 
 def send_email_with_sendgrid(sender_email,email_content, email_subject):
-    print('api key', os.getenv("API"))
-    sg = SendGridAPIClient(api_key=os.getenv("API"))
-    print('sg', sg)                 
+    sg = SendGridAPIClient(api_key=os.getenv("API"))          
 
-    email_body = f"<strong>{email_content}</strong>"  # O puedes formatear el cuerpo del correo como prefieras
-    sender_email.replace("@firmatec.xyz", "@empresasintegra.cl")
+    email= []
+    email.append(sender_email.replace("@firmatec.xyz", "@empresasintegra.cl"))
+
+
+    # Expresión regular para encontrar el texto que deseas
+    pattern = r"""text/html; charset="utf-8"\r\nContent-Transfer-Encoding: base64\r\nMIME-Version: 1.0\r\n\r\n(.*?)--"""
+
+    # Buscar el texto que coincida con el patrón en el correo completo
+    matches = re.findall(pattern, email_content, re.DOTALL)
+
+    # Si se encuentran coincidencias, almacenarlas en la variable correo_html
+    if matches:
+        correo_html = matches[0]
+    else:
+        print("No se encontró el texto deseado en el correo.")
+
+    #base64 a html
+    correo_html = base64.b64decode(correo_html).decode('utf-8')
+
     message = Mail(
         from_email='notificaciones@firmatec.xyz' ,  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
-        to_emails= sender_email,  # Destinatario del correo
+        to_emails= email,  # Destinatario del correo
         subject=f'Reenviado: {email_subject}',
-        html_content=email_body
+        html_content=correo_html
     )
     try:
         response = sg.send(message)
