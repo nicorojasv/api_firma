@@ -282,7 +282,7 @@ async def procesar_email(request: Request):
         content = body.decode(encoding)
         # content = body.decode('utf-8')
         # print('body', body)
-        # print('contenidoooo', content)
+        print('contenidoooo', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
         lines = [line.lower() for line in content.splitlines()]
