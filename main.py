@@ -278,9 +278,9 @@ async def procesar_email(request: Request):
         print('procesar_email entro')
         body = await request.body()
         # Decodifica el cuerpo del correo electrónico con la codificación detectada
-        # encoding = detect_encoding(body)
-        # content = body.decode(encoding)
-        content = body.decode('utf-8')
+        encoding = detect_encoding(body)
+        content = body.decode(encoding)
+        # content = body.decode('utf-8')
         # print('body', body)
         print('contenidoooo', content)
         match = re.search(r"(?<=name=\"subject\"\r\n\r\n)(.*?)(?=\r\n--xYzZY)", content)
