@@ -10,6 +10,7 @@ import json
 import logging
 import traceback
 import sys
+import chardet
 
 # Bibliotecas de terceros
 
@@ -145,7 +146,7 @@ def create_partners(signing_parties, uid, password, models):
             partner_id_2 = partner_id_2[0]
         print('firmantes')
         # Obtener el ID del socio con la dirección de correo electrónico 'test@krino.ai'
-        cc_partner_email = 'test@krino.ai'
+        cc_partner_email = 'test@firmatec.xyz'
         cc_partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', cc_partner_email)]])
         if cc_partner_id:
             cc_partner_id = cc_partner_id[0]
@@ -246,6 +247,20 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
     return response
 
 
+def detect_encoding(body):
+    """
+    Detecta la codificación del cuerpo del correo electrónico.
+
+    Argumentos:
+        body: el cuerpo del correo electrónico.
+
+    Devoluciones:
+        La codificación del cuerpo del correo electrónico.
+    """
+    result = chardet.detect(body)
+    return result.get("encoding", "utf-8")
+
+
 @app.post("/procesar_email")
 async def procesar_email(request: Request):
     """
@@ -260,10 +275,13 @@ async def procesar_email(request: Request):
     """
     try:
         # Leer el cuerpo de la solicitud como texto
-        body = await request.body()
         print('procesar_email entro')
+        body = await request.body()
+        # Decodifica el cuerpo del correo electrónico con la codificación detectada
+        encoding = detect_encoding(body)
+        content = body.decode(encoding)
+        # content = body.decode('utf-8')
         # print('body', body)
-        content = body.decode('utf-8')
         # print('contenidoooo', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
