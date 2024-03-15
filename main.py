@@ -261,9 +261,10 @@ async def procesar_email(request: Request):
     try:
         # Leer el cuerpo de la solicitud como texto
         body = await request.body()
+        print('procesar_email entro')
         # print('body', body)
         content = body.decode('utf-8')
-        print('contenidoooo', content)
+        # print('contenidoooo', content)
 
         # Divide el contenido en líneas y ponlas en minúsculas para que no se distinga entre mayúsculas y minúsculas.
         lines = [line.lower() for line in content.splitlines()]
@@ -431,4 +432,67 @@ def send_email_with_sendgrid(sender_email,email_content, email_subject):
         print(f"Error al enviar correo con SendGrid: {e}")
 
 
+@app.put("/cancelar")
+def cancelar_firma(id):
+    print('entro en la funcion de cancelar')
+    """
+    Cancela una solicitud de firma.
+    """
+    try:
+        # Autenticación en Odoo
+        uid = authenticate(url, db, username, password)
+        print('bien ')
+        if not uid:
+            return {"error": "Autenticación fallida. Verifica tus credenciales."}
 
+        models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+        # Buscar el registro y obtener su ID y estado
+        documento_id = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', id)]], {'fields': ['id', 'state']})
+
+        # Verificar si se encontró algún registro
+        if documento_id:
+            # Obtener el estado del documento
+            estado = documento_id[0]['state']
+            print('state: ', estado )
+            
+            # Verificar si el estado es 'canceled' o 'signed'
+            if estado == 'canceled':
+                return {"message": "El documento ya está cancelado."}
+            elif estado == 'signed':
+                return {"message": "El documento está firmado."}
+            else:
+                # Actualizar el estado del registro
+                models.execute_kw(db, uid, password, 'sign.request', 'write', [documento_id[0]['id'], {'state': 'canceled'}])
+                print("El estado del documento ha sido actualizado a 'canceled'.")
+                return {"message": "El documento se ha cancelado exitosamente."}
+        else:
+            print("No se encontró ningún registro con el ID proporcionado.")
+            return {"error": "No se encontró el documento con el ID proporcionado."}
+
+    except ConnectionError:
+        return {"error": "Error de conexión a Odoo. Verifica la URL."}
+    except XmlRpcError as xe:
+        return {"error": f"Error en la llamada XML-RPC a Odoo: {xe}"}
+    except ValueError as ve:
+        return {"error": f"Error de valor: {ve}"}
+    except Exception as e:
+        return {"error": f"Error desconocido: {str(e)}"}
+
+
+@app.get("/info")
+def info(id):
+    try:
+        # Autenticación en Odoo
+        uid = authenticate(url, db, username, password)
+        if uid:
+            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+            contrato_ids = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', id)]], {'fields': ['message_follower_ids', 'message_ids', 'create_date', 'completion_date', 'completed_document_attachment_ids', 'completed_document', 'cc_partner_ids', 'attachment_ids', 'activity_state', 'active', 'write_date', 'validity', 'template_tags', 'template_id', 'subject', 'state', 'start_sign', 'sign_log_ids', 'request_item_ids', 'reminder', 'reference', 'progress', 'nb_wait', 'nb_total', 'nb_closed', 'my_activity_date_deadline', 'message_partner_ids', 'message_is_follower', 'message_ids', 'message_has_sms_error', 'message_has_error_counter', 'message_has_error', 'message_follower_ids', 'message_cc', 'message_attachment_count', 'message', 'last_reminder', 'id', 'has_message', 'favorited_ids', 'display_name']})
+            firma = models.execute_kw(db, uid, password, 'sign.request.item', 'search_read', [[('id', '=', contrato_ids[0]['request_item_ids'][0])]], {'fields': ['state']})
+            print('firma', firma)
+            print('otra', contrato_ids[0]['request_item_ids'])
+            print('otra', contrato_ids[0]['request_item_ids'][0])
+            print('otra', contrato_ids[0]['request_item_ids'][1])
+            return contrato_ids
+
+    except Exception as e:
+        print(e)
