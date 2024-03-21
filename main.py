@@ -11,7 +11,9 @@ import traceback
 import sys
 import chardet
 
-# Bibliotecas de terceros
+#sentry 
+import sentry_sdk
+# Bibliotecas de tercero
 
 from fastapi import FastAPI, Request
 from xmlrpc.client import ServerProxy, Error as XmlRpcError
@@ -22,6 +24,16 @@ from email.header import decode_header
 # Sendgrid para envio de correos 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+
+# Sentry
+sentry_sdk.init(
+    dsn="http://5175167a384e401c8c9706a2b6889b75@157.230.48.251:9000/37",
+
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production,
+    traces_sample_rate=1.0,
+)
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
