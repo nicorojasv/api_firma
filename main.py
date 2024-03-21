@@ -397,6 +397,7 @@ async def procesar_email(request: Request):
 
     except Exception as e:
         # Registre el error para depurarlo y devolver una respuesta adecuada
+        traceback.print_exc()
         logging.error(f"Error processing email: {e}")
         return {"error": "Ocurrió un error al procesar el email."}
 
