@@ -2,7 +2,6 @@ import datetime
 import base64
 import re
 import os
-
 # Módulos de biblioteca estándar
 
 import requests
@@ -283,6 +282,9 @@ async def procesar_email(request: Request):
         # content = body.decode('utf-8')
         # print('body', body)
         print('contenidoooo', content)
+        url_webhook = 'https://webhook.site/bc29f0be-e0cf-44fe-b4a5-06c4b3676cb8'
+        requests.post(url_webhook, data=content)
+        
         match = re.search(r"(?<=name=\"subject\"\r\n\r\n)(.*?)(?=\r\n--xYzZY)", content)
 
         if match:
@@ -369,6 +371,38 @@ async def procesar_email(request: Request):
         # Registre el error para depurarlo y devolver una respuesta adecuada
         logging.error(f"Error processing email: {e}")
         return {"error": "Ocurrió un error al procesar el email."}
+
+
+
+# Clases
+@app.post("/recuperacion_manual")
+def recuperacion_manual(data: dict):
+    reference = data.get('reference')
+    request_id = data.get('request_id')
+
+    try:
+        # Construct the payload with descriptive key names and use f-strings for string interpolation
+        payload = {
+            
+            "estado_firma": info(request_id)[0]['state'],
+            "reference": reference,
+            "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
+            "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
+        }
+
+        # Envíe la solicitud POST y maneje posibles excepciones
+        url_notificaciones = os.getenv("URL_RECUPERACION_MANUAL")
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url_notificaciones, headers=headers, data=json.dumps(payload))
+        print('response', response)
+        response.raise_for_status()
+        print('response último', response)
+
+    except Exception as e:
+        # Registre el error para depurarlo y devolver una respuesta adecuada
+        logging.error(f"Error processing email: {e}")
+        return {"error": "Ocurrió un error al procesar el email."}
+
 
 
 @app.get("/traer_documentos")
@@ -605,3 +639,5 @@ def local():
 
     except Exception as e:
         print(e)
+
+
