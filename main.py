@@ -362,7 +362,7 @@ async def procesar_email(request: Request):
             sender_email = recipient  # Define el correo del remitente aquí
 
 
-            send_email_with_sendgrid(sender_email,email_content, email_subject)
+            # send_email_with_sendgrid(sender_email,email_content, email_subject)
             payload = {
                 "contrato_id": id_contrato,
                 "estado_firma": status,
