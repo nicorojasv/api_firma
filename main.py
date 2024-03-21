@@ -341,7 +341,16 @@ async def procesar_email(request: Request):
         id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
         id_contrato_match = id_contrato_regex.search(subject)
         id_contrato = id_contrato_match.group(2) if id_contrato_match else None
-        print('id_contrato', id_contrato)
+        print('id_contrato try', id_contrato)
+        if id_contrato is None:
+            # Expresión regular para extraer el número deseado
+            pattern = r'CTTO_(\d+)'
+            matches = re.search(pattern, subject)
+            # Verificar si se encontró una coincidencia y asignarla a la variable "id_contrato"
+            if matches:
+                id_contrato = matches.group(1)  # Tomar el primer grupo capturado
+                print("ID del contrato:", id_contrato)
+        print('Contrato', id_contrato)
 
         # Utilice un diccionario y formato de cadena para el estado del mapeo
         status_mapping = {
@@ -376,7 +385,7 @@ async def procesar_email(request: Request):
             sender_email = recipient  # Define el correo del remitente aquí
 
 
-            # send_email_with_sendgrid(sender_email,email_content, email_subject)
+            send_email_with_sendgrid(sender_email,email_content, email_subject)
             payload = {
                 "contrato_id": id_contrato,
                 "estado_firma": status,
