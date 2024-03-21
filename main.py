@@ -307,8 +307,20 @@ async def procesar_email(request: Request):
             subject = match.group(1)
             print('subject', subject)
 
-        reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0]
+        try:
+            reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0]
+            print('reference try ', reference)
+        except:
+            # Expresión regular para extraer el número deseado
+            pattern = r'\d+\.\d+\.\d+-[A-Z]+_CTTO_\d+'
+            matches = re.search(pattern, subject)
+
+            # Verificar si se encontró una coincidencia y asignarla a la variable "reference"
+            if matches:
+                reference = matches.group()
+                print("Reference:", reference)
         print('reference', reference)
+
 
         # Obtener el destinatario
         recipient = None
