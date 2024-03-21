@@ -27,7 +27,7 @@ from sendgrid.helpers.mail import Mail
 
 # Sentry
 sentry_sdk.init(
-    dsn="http://5175167a384e401c8c9706a2b6889b75@157.230.48.251:9000/37",
+    dsn=os.getenv("DNS_SENTRY"),
 
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
