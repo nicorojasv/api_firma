@@ -281,7 +281,7 @@ async def procesar_email(request: Request):
         content = body.decode(encoding)
         # content = body.decode('utf-8')
         # print('body', body)
-        print('contenidoooo', content)
+        # print('contenidoooo', content)
         url_webhook = 'https://webhook.site/bc29f0be-e0cf-44fe-b4a5-06c4b3676cb8'
         requests.post(url_webhook, data=content)
         
@@ -319,7 +319,7 @@ async def procesar_email(request: Request):
         status_mapping = {
             "se firm": "FF",
             "Uno de los signatarios rechaz": "RC",
-            "Firma Contrato": "FT",
+            "Firma": "FT",
         }
         # Mapear el estado según el contenido del asunto
         for condition, mapped_status in status_mapping.items():
@@ -446,9 +446,6 @@ def send_email_with_sendgrid(sender_email,email_content, email_subject):
 
     email= []
     email.append(sender_email.replace("@firmatec.xyz", "@empresasintegra.cl"))
-    email.append('soporte@empresasintegra.cl')
-    email.append('maye.yrs23@gmail.com')
-    email.append('n.rojas.valdes@gmail.com')
 
 
     # Expresión regular para encontrar el texto que deseas
