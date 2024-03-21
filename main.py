@@ -25,6 +25,8 @@ from email.header import decode_header
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+
+load_dotenv()
 # Sentry
 sentry_sdk.init(
     dsn=os.getenv("DNS_SENTRY"),
@@ -36,7 +38,7 @@ sentry_sdk.init(
 )
 
 # Cargar variables de entorno desde el archivo .env
-load_dotenv()
+
 
 app = FastAPI()
 
