@@ -255,6 +255,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
     }
     request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
     print(request_id)
+    return request_id
 
 
 def detect_encoding(body):
@@ -497,9 +498,10 @@ def traer_documentos(reference, tipo_documento):
                 certificado = models.execute_kw(db, uid, password, 'ir.attachment', 'search_read', [[('id', '=', contrato_ids[0]['completed_document_attachment_ids'])]], {'fields': ['name', 'datas']})
                 # Solo documento firmado en base64
                 if tipo_documento == 'certificado':
+                    print ('Bien certificado ')
                     return certificado[0]['datas']
                 if tipo_documento == 'contrato':
-                    print ('Bien')
+                    print ('Bien contrato ')
                     return certificado[1]['datas']
                 else:
                     return {"message": "No se encontraron documentos"}
