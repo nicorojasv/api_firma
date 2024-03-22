@@ -113,7 +113,6 @@ def solicitud_firma(data: dict):
         print('template_id: ',template_id)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models)
 
-        return {"request_id": request_id}
 
     except ConnectionError:
         return {"error": "Error de conexión a Odoo. Verifica la URL."}
@@ -253,11 +252,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
     }
     request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
     print(request_id)
-
-    response = {
-        'request_id': request_id
-    }
-    return response
+    return request_id
 
 
 def detect_encoding(body):
@@ -272,6 +267,27 @@ def detect_encoding(body):
     """
     result = chardet.detect(body)
     return result.get("encoding", "utf-8")
+
+
+@app.post("/obtener_reference")
+def obtener_reference(subject):
+    print('subject=', subject)
+    # Patrón de expresión regular general
+    # pattern = r'\d+\.\d+\.\d+-[A-Z]+_CTTO_\d+' # Contrato "16.038.185-K_CTTO_4959"
+    # Expresión regular para extraer el patrón deseado
+    # pattern = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}-\d{1,3}_\w+_\d{1,4}\b' # Anexo, Carta Término, Autorización
+    pattern = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}-[A-Za-z0-9]+_\w+_\d{1,4}\b' # Contrato, Anexo, Carta Término, Autorización
+    
+    # Buscar coincidencias en el subject
+    matches = re.search(pattern, subject)
+    
+    # Verificar si se encontró una coincidencia y retornar el reference correspondiente
+    if matches:
+        reference = matches.group(0)
+        print('reference', reference)
+        return reference
+    else:
+        print("No se encontró ningún patrón en el subject.")
 
 
 @app.post("/procesar_email")
@@ -311,14 +327,7 @@ async def procesar_email(request: Request):
             reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0]
             print('reference try ', reference)
         except:
-            # Expresión regular para extraer el número deseado
-            pattern = r'\d+\.\d+\.\d+-[A-Z]+_CTTO_\d+'
-            matches = re.search(pattern, subject)
-
-            # Verificar si se encontró una coincidencia y asignarla a la variable "reference"
-            if matches:
-                reference = matches.group()
-                print("Reference:", reference)
+            obtener_reference(subject)
         print('reference', reference)
 
 
