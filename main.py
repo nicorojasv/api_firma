@@ -109,9 +109,9 @@ def solicitud_firma(data: dict):
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
         print('attachment_id: ',attachment_id)
-        template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models)
+        template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
         print('template_id: ',template_id)
-        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models)
+        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models)
         return request_id
 
 
@@ -198,12 +198,13 @@ def create_attachment(documentos, uid, password, models):
     return attachment_id
 
 
-def create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models):
+def create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models):
     print('templat')
+    print('create_template tag_id', tag_id)
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': []}
+    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': tag_id,}
 
     for firmante in signing_parties:
         for page in pages:  # Iterate through the desired pages list
@@ -223,9 +224,8 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
     return template_id
 
 
-def create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models):
+def create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models):
     print('signature')
-    print('create_signature_request tag_id', tag_id)
     """Función de creación de requests de firma"""
     # Validación de días (5)
     validity = datetime.datetime.now() + datetime.timedelta(days=5)
@@ -248,7 +248,7 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
         # 'template_tags': tag_id,
-        'template_tags': [(6, 0, tag_id)],
+        # 'template_tags': [(6, 0, tag_id)],
         'cc_partner_ids': [(6, 0, [partner_ids[2]])],
         'message_partner_ids': [(6, 0, [partner_ids[2]])],
 
