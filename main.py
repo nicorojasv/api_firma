@@ -309,19 +309,25 @@ def obtener_id_documento(subject):
         print("No se encontró ningún patrón en el subject.")
 
 
-@app.post("/obtener_tipo_archivo")
-def obtener_tipo_archivo(subject):
-    print('subject=', subject)
-    pattern = r'(?<=Firma\s)\w+'  
+@app.get("/buscar_tag")
+def buscar_tag(reference):
+    print('reference', reference)
+    try:
+        # Autenticación en Odoo
+        uid = authenticate(url, db, username, password)
+        if uid:
+            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+            firma = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['template_id']})
+            template_id = firma[0]['template_id'][0]
+            template = models.execute_kw(db, uid, password, 'sign.template', 'search_read', [[('id', '=', template_id)]], {'fields': ['tag_ids']})
 
-    match = re.search(pattern, subject)
+            tag_id = template[0]['tag_ids'][0]
+            tag = models.execute_kw(db, uid, password, 'sign.template.tag', 'search_read', [[('id', '=', tag_id)]], {'fields': ['name']})
+            print('tag', tag[0]['name'])
+            return tag[0]['name']
 
-    if match:
-        archivo = match.group(0)  
-        print("archivo:", archivo)
-        return archivo
-    else:
-        print("No se encontró ningún patrón en el subject.")
+    except Exception as e:
+        print(e)
 
 
 @app.post("/procesar_email")
@@ -361,8 +367,7 @@ async def procesar_email(request: Request):
             obtener_reference(subject)
         print('reference', reference)
 
-        archivo = obtener_tipo_archivo(subject)
-        
+        archivo = buscar_tag(reference)
         print('archivo', archivo)
 
         # Obtener el destinatario
