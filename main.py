@@ -112,6 +112,7 @@ def solicitud_firma(data: dict):
         template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, uid, password, models)
         print('template_id: ',template_id)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models)
+        return request_id
 
 
     except ConnectionError:
@@ -224,6 +225,7 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
 
 def create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, tag_id, uid, password, models):
     print('signature')
+    print('create_signature_request tag_id', tag_id)
     """Función de creación de requests de firma"""
     # Validación de días (5)
     validity = datetime.datetime.now() + datetime.timedelta(days=5)
@@ -245,14 +247,13 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
-        'template_tags': [(6, 0, [tag_id])],
+        'template_tags': tag_id,
         'cc_partner_ids': [(6, 0, [partner_ids[2]])],
         'message_partner_ids': [(6, 0, [partner_ids[2]])],
 
     }
     request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
     print(request_id)
-    return request_id
 
 
 def detect_encoding(body):
@@ -360,6 +361,8 @@ async def procesar_email(request: Request):
         print('reference', reference)
 
         archivo = obtener_tipo_archivo(subject)
+        
+        print('archivo', archivo)
 
         # Obtener el destinatario
         recipient = None
