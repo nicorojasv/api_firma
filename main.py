@@ -290,6 +290,23 @@ def obtener_reference(subject):
         print("No se encontró ningún patrón en el subject.")
 
 
+@app.post("/id_documento")
+def id_documento(subject):
+    print('subject=', subject)
+    pattern = r'(?<=_)\d{1,4}\b'
+    
+    # Buscar coincidencias en el subject
+    matches = re.search(pattern, subject)
+    
+    # Verificar si se encontró una coincidencia y retornar el id documento correspondiente
+    if matches:
+        documento = matches.group(0)
+        print('documento', documento)
+        return documento
+    else:
+        print("No se encontró ningún patrón en el subject.")
+
+
 @app.post("/procesar_email")
 async def procesar_email(request: Request):
     """
@@ -346,20 +363,21 @@ async def procesar_email(request: Request):
         else:
             print("No se pudo encontrar el asunto o el destinatario.")
 
-        # Extraiga la identificación del sujeto usando una expresión regular más concisa
-        id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
-        id_contrato_match = id_contrato_regex.search(subject)
-        id_contrato = id_contrato_match.group(2) if id_contrato_match else None
-        print('id_contrato try', id_contrato)
-        if id_contrato is None:
-            # Expresión regular para extraer el número deseado
-            pattern = r'CTTO_(\d+)'
-            matches = re.search(pattern, subject)
-            # Verificar si se encontró una coincidencia y asignarla a la variable "id_contrato"
-            if matches:
-                id_contrato = matches.group(1)  # Tomar el primer grupo capturado
-                print("ID del contrato:", id_contrato)
-        print('Contrato', id_contrato)
+        # # Extraiga la identificación del sujeto usando una expresión regular más concisa
+        # id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
+        # id_contrato_match = id_contrato_regex.search(subject)
+        # id_contrato = id_contrato_match.group(2) if id_contrato_match else None
+        # print('id_contrato try', id_contrato)
+        # if id_contrato is None:
+        #     # Expresión regular para extraer el número deseado
+        #     pattern = r'CTTO_(\d+)'
+        #     matches = re.search(pattern, subject)
+        #     # Verificar si se encontró una coincidencia y asignarla a la variable "id_contrato"
+        #     if matches:
+        #         id_contrato = matches.group(1)  # Tomar el primer grupo capturado
+        #         print("ID del contrato:", id_contrato)
+        # print('Contrato', id_contrato)
+        id_documento = id_documento(subject)
 
         # Utilice un diccionario y formato de cadena para el estado del mapeo
         status_mapping = {
@@ -376,13 +394,13 @@ async def procesar_email(request: Request):
         print('status', status)
 
         # Verifique los datos requeridos y devuelva el error si falta
-        if not all([id_contrato, status, reference]):
-            return {"error": "No se pudo extraer id_contrato, status y/o reference del cuerpo del email."}
+        if not all([id_documento, status, reference]):
+            return {"error": "No se pudo extraer id_documento, status y/o reference del cuerpo del email."}
 
         if status == 'FF':
             # Construct the payload with descriptive key names and use f-strings for string interpolation
             payload = {
-                "contrato_id": id_contrato,
+                "contrato_id": id_documento,
                 "estado_firma": status,
                 "reference": reference,
                 "contrato_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
@@ -396,7 +414,7 @@ async def procesar_email(request: Request):
 
             send_email_with_sendgrid(sender_email,email_content, email_subject)
             payload = {
-                "contrato_id": id_contrato,
+                "contrato_id": id_documento,
                 "estado_firma": status,
                 "reference": reference,
                 "contrato_pdf": None,
