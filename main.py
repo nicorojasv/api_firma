@@ -290,8 +290,8 @@ def obtener_reference(subject):
         print("No se encontró ningún patrón en el subject.")
 
 
-@app.post("/id_documento")
-def id_documento(subject):
+@app.post("/obtener_id_documento")
+def obtener_id_documento(subject):
     print('subject=', subject)
     pattern = r'(?<=_)\d{1,4}\b'
     
@@ -377,7 +377,7 @@ async def procesar_email(request: Request):
         #         id_contrato = matches.group(1)  # Tomar el primer grupo capturado
         #         print("ID del contrato:", id_contrato)
         # print('Contrato', id_contrato)
-        id_documento = id_documento(subject)
+        id_documento = obtener_id_documento(subject)
 
         # Utilice un diccionario y formato de cadena para el estado del mapeo
         status_mapping = {
