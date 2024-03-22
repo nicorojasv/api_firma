@@ -307,6 +307,21 @@ def obtener_id_documento(subject):
         print("No se encontró ningún patrón en el subject.")
 
 
+@app.post("/obtener_tipo_archivo")
+def obtener_tipo_archivo(subject):
+    print('subject=', subject)
+    pattern = r'(?<=Firma\s)\w+'  
+
+    match = re.search(pattern, subject)
+
+    if match:
+        archivo = match.group(0)  
+        print("archivo:", archivo)
+        return archivo
+    else:
+        print("No se encontró ningún patrón en el subject.")
+
+
 @app.post("/procesar_email")
 async def procesar_email(request: Request):
     """
@@ -347,6 +362,7 @@ async def procesar_email(request: Request):
             obtener_reference(subject)
         print('reference', reference)
 
+        archivo = obtener_tipo_archivo(subject)
 
         # Obtener el destinatario
         recipient = None
@@ -363,20 +379,6 @@ async def procesar_email(request: Request):
         else:
             print("No se pudo encontrar el asunto o el destinatario.")
 
-        # # Extraiga la identificación del sujeto usando una expresión regular más concisa
-        # id_contrato_regex = re.compile(r"(\d+)(?:_\w+)?_(\d+)")
-        # id_contrato_match = id_contrato_regex.search(subject)
-        # id_contrato = id_contrato_match.group(2) if id_contrato_match else None
-        # print('id_contrato try', id_contrato)
-        # if id_contrato is None:
-        #     # Expresión regular para extraer el número deseado
-        #     pattern = r'CTTO_(\d+)'
-        #     matches = re.search(pattern, subject)
-        #     # Verificar si se encontró una coincidencia y asignarla a la variable "id_contrato"
-        #     if matches:
-        #         id_contrato = matches.group(1)  # Tomar el primer grupo capturado
-        #         print("ID del contrato:", id_contrato)
-        # print('Contrato', id_contrato)
         id_documento = obtener_id_documento(subject)
 
         # Utilice un diccionario y formato de cadena para el estado del mapeo
@@ -400,10 +402,11 @@ async def procesar_email(request: Request):
         if status == 'FF':
             # Construct the payload with descriptive key names and use f-strings for string interpolation
             payload = {
-                "contrato_id": id_documento,
+                "tipo_archivo": archivo,
+                "documento_id": id_documento,
                 "estado_firma": status,
                 "reference": reference,
-                "contrato_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
+                "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
                 "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
             }
         else:
@@ -414,10 +417,11 @@ async def procesar_email(request: Request):
 
             send_email_with_sendgrid(sender_email,email_content, email_subject)
             payload = {
-                "contrato_id": id_documento,
+                "tipo_archivo": archivo,
+                "documento_id": id_documento,
                 "estado_firma": status,
                 "reference": reference,
-                "contrato_pdf": None,
+                "documento_pdf": None,
                 "certificado_pdf": None,
             }
 
