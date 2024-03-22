@@ -204,7 +204,7 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
     """Función de creación de templates"""
     # Crear template
     models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': tag_id,}
+    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': [(6, 0, [tag_id])],}
 
     for firmante in signing_parties:
         for page in pages:  # Iterate through the desired pages list
