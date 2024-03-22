@@ -247,7 +247,8 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         ],
         'message': message,
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
-        'template_tags': tag_id,
+        # 'template_tags': tag_id,
+        'template_tags': [(6, 0, tag_id)],
         'cc_partner_ids': [(6, 0, [partner_ids[2]])],
         'message_partner_ids': [(6, 0, [partner_ids[2]])],
 
