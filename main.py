@@ -342,13 +342,10 @@ async def procesar_email(request: Request):
         encoding = detect_encoding(body)
         content = body.decode(encoding)
         # content = body.decode('utf-8')
-        # print('body', body)
-        # print('contenidoooo', content)
-
 
         # url_webhook = 'https://webhook.site/bc29f0be-e0cf-44fe-b4a5-06c4b3676cb8'
         # requests.post(url_webhook, data=content)
-        
+
         match = re.search(r"(?<=name=\"subject\"\r\n\r\n)(.*?)(?=\r\n--xYzZY)", content)
 
         if match:
