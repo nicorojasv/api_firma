@@ -391,7 +391,7 @@ async def procesar_email(request: Request):
         # Utilice un diccionario y formato de cadena para el estado del mapeo
         status_mapping = {
             "se firm": "FF",
-            "Uno de los signatarios rechaz": "RC",
+            "Uno de los signatarios rechaz": "OB",
             "Firma": "FT",
         }
         # Mapear el estado según el contenido del asunto
