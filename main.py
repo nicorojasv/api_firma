@@ -552,7 +552,7 @@ def recuperacion_manual(reference):
     uid = authenticate(url, db, username, password)
     if uid:
         models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-        status = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', id)]], {'fields': ['state']})
+        status = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['state']})
         print('status', status)
     try:
         # Construct the payload with descriptive key names and use f-strings for string interpolation
