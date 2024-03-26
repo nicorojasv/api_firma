@@ -546,8 +546,8 @@ async def procesar_email(request: Request):
 
 # Clases
 @app.post("/recuperacion_manual")
-def recuperacion_manual(data: dict):
-    reference = data.get('reference')
+def recuperacion_manual(reference):
+    print('reference', reference)
         # Autenticación en Odoo
     uid = authenticate(url, db, username, password)
     if uid:
