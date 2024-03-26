@@ -548,13 +548,17 @@ async def procesar_email(request: Request):
 @app.post("/recuperacion_manual")
 def recuperacion_manual(data: dict):
     reference = data.get('reference')
-    request_id = data.get('request_id')
-
+        # Autenticación en Odoo
+    uid = authenticate(url, db, username, password)
+    if uid:
+        models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+        status = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('id', '=', id)]], {'fields': ['state']})
+        print('status', status)
     try:
         # Construct the payload with descriptive key names and use f-strings for string interpolation
         payload = {
             
-            "estado_firma": info(request_id)[0]['state'],
+            "estado_firma": status[0]['state'],
             'tipo_documento': buscar_tag(reference),
             "reference": reference,
             "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
