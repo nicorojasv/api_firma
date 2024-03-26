@@ -101,8 +101,8 @@ def solicitud_firma(data: dict):
         role_mapping = {role['name']: role['id'] for role in roles}
 
         # Nombres de los roles en su instancia de Odoo
-        cliente_role_id = role_mapping.get('Cliente') # Cliente
-        empresa_role_id = role_mapping.get('Empresa') # Empresa
+        cliente_role_id = role_mapping.get('Customer') # Cliente
+        empresa_role_id = role_mapping.get('Employee') # Empresa
         trabajador_role_id = role_mapping.get('Trabajador') # Trabajador
         contacto_role_id = role_mapping.get('Contacto') # Contacto
         print('ROL cliente: ', cliente_role_id, 'Empresa: ', empresa_role_id, 'Trabajador: ', trabajador_role_id, 'contacto: ', contacto_role_id )
