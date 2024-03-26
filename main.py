@@ -103,7 +103,7 @@ def solicitud_firma(data: dict):
 
         # Nombres de los roles en su instancia de Odoo
         cliente_role_id = role_mapping.get('Customer') # Cliente
-        empresa_role_id = role_mapping.get('Employee') # Empresa
+        empresa_role_id = role_mapping.get('Company') # Empresa
         trabajador_role_id = role_mapping.get('Trabajador') # Trabajador
         contacto_role_id = role_mapping.get('Contacto') # Contacto
         print('ROL cliente: ', cliente_role_id, 'Empresa: ', empresa_role_id, 'Trabajador: ', trabajador_role_id, 'contacto: ', contacto_role_id )
@@ -834,3 +834,19 @@ def local():
         print(e)
 
 
+@app.get("/roles")
+def roles(id):
+    try:
+        # Autenticación en Odoo
+        uid = authenticate(url, db, username, password)
+        if uid:
+            models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+            roles = models.execute_kw(db, uid, password, 'sign.item.role', 'search_read', [[('id', '=', id)]], {'fields': ['id', 'name']})
+            print('roles: ',roles)
+            role_mapping = {role['name']: role['id'] for role in roles}
+            print('role_mapping', role_mapping)
+            # completion_date = fecha de finalización
+            return roles
+
+    except Exception as e:
+        print(e)
