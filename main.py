@@ -98,6 +98,7 @@ def solicitud_firma(data: dict):
         print('tag: ',tag)
 
         roles = models.execute_kw(db, uid, password, 'sign.item.role', 'search_read', [[]], {'fields': ['id', 'name']})
+        print('roles: ',roles)
         role_mapping = {role['name']: role['id'] for role in roles}
 
         # Nombres de los roles en su instancia de Odoo
@@ -243,11 +244,13 @@ def create_template(subject, attachment_id, signing_parties, pages, trabajador_r
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': trabajador_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('trabajador_role_id', trabajador_role_id)
             elif firmante['display_name'] == 'Empleador':
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': empresa_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('empresa_role_id', empresa_role_id)
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('hola')
@@ -305,16 +308,19 @@ def create_template_cliente(subject, attachment_id, signing_parties, pages, clie
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': cliente_role_id, 'posX': 0.15, 'posY': 0.75, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('cliente_role_id', cliente_role_id)
             elif firmante['color'] == 2: # Cliente
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': contacto_role_id, 'posX': 0.7, 'posY': 0.75, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('contacto_role_id', contacto_role_id)
             elif firmante['color'] == 3: # Empleador
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
                             'page': page, 'responsible_id': empresa_role_id, 'posX': 0.4, 'posY': 0.80, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('empresa_role_id', empresa_role_id)
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('Cliente')
