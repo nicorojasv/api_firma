@@ -461,13 +461,14 @@ def recuperacion_manual(data: dict):
         payload = {
             
             "estado_firma": info(request_id)[0]['state'],
+            'tipo_documento': buscar_tag(reference),
             "reference": reference,
             "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
             "certificado_pdf": traer_documentos(reference, tipo_documento ='certificado'),
         }
 
         # Envíe la solicitud POST y maneje posibles excepciones
-        url_notificaciones = os.getenv("URL_RECUPERACION_MANUAL")
+        url_notificaciones = os.getenv("URL_NOTIFICACIONES")
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url_notificaciones, headers=headers, data=json.dumps(payload))
         print('response', response)
@@ -522,7 +523,7 @@ def send_email_with_sendgrid(sender_email,email_content, email_subject):
     sg = SendGridAPIClient(api_key=os.getenv("API"))          
 
     email= []
-    email.append(sender_email.replace("@firmatec.xyz", "@empresasintegra.cl"))
+    email.append(sender_email.replace("@sistemafirmatec.cl", "@empresasintegra.cl"))
 
 
     # Expresión regular para encontrar el texto que deseas
@@ -541,7 +542,7 @@ def send_email_with_sendgrid(sender_email,email_content, email_subject):
     correo_html = base64.b64decode(correo_html).decode('utf-8')
 
     message = Mail(
-        from_email='notificaciones@krino.ai' ,  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
+        from_email='notificaciones@sistemafirmatec.cl' ,  # Asegúrate de cambiar esto por tu correo registrado en SendGrid
         to_emails= email,  # Destinatario del correo
         subject=f'Reenviado: {email_subject}',
         html_content=correo_html
