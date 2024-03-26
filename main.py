@@ -110,12 +110,14 @@ def solicitud_firma(data: dict):
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
         print('attachment_id: ',attachment_id)
+        # Si es Cliente con 3 firmantes
         if len(signing_parties) == 3:
             template_id = create_template_cliente(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
+            request_id = create_signature_cliente(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models)
         else:
             template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
+            request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models)
         print('template_id: ',template_id)
-        request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models)
         return request_id
 
 
@@ -230,7 +232,9 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
     template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': [(6, 0, [tag_id])],}
 
     for firmante in signing_parties:
+        print('firmante', firmante)
         for page in pages:  # Iterate through the desired pages list
+            print('page', page)
             if firmante['display_name'] == 'Trabajador':
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
@@ -244,37 +248,6 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
 
     template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
     print('hola')
-    return template_id
-
-
-def create_template_cliente(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models):
-    print('templat cliente')
-    print('cliente create_template tag_id', tag_id)
-    """Función de creación de templates"""
-    # Crear template
-    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
-    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': [(6, 0, [tag_id])],}
-
-    for firmante in signing_parties:
-        for page in pages:  # Iterate through the desired pages list
-            if firmante['display_name'] == 'Cliente':
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-            elif firmante['display_name'] == 'Cliente':
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-            elif firmante['display_name'] == 'Empleador':
-                template_data['sign_item_ids'].append(
-                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.43, 'posY': 0.90, 'width': 0.2, 'height': 0.1, 'required': True})
-                )
-
-    template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
-    print('Cliente')
     return template_id
 
 
@@ -303,6 +276,71 @@ def create_signature_request(template_id, subject, reference, reminder, partner_
         'state': 'sent', # shared, sent, signed, refused, canceled, expired
         # 'template_tags': tag_id,
         # 'template_tags': [(6, 0, tag_id)],
+        'cc_partner_ids': [(6, 0, [partner_ids[2]])],
+        'message_partner_ids': [(6, 0, [partner_ids[2]])],
+
+    }
+    request_id = models.execute_kw(db, uid, password, 'sign.request', 'create', [request_data])
+    print(request_id)
+    return request_id
+
+
+def create_template_cliente(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models):
+    print('templat cliente')
+    print('cliente create_template tag_id', tag_id)
+    """Función de creación de templates"""
+    # Crear template
+    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': [(6, 0, [tag_id])],}
+
+    for firmante in signing_parties:
+        print('firmante', firmante)
+        for page in pages:  # Iterate through the desired pages list
+            print('page', page)
+            if firmante['color'] == 1: # Cliente
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+            elif firmante['color'] == 2: # Cliente
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+            elif firmante['color'] == 3: # Empleador
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.4, 'posY': 0.90, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+
+    template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
+    print('Cliente')
+    return template_id
+
+
+def create_signature_cliente(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models):
+    print('signature cliente')
+    """Función de creación de requests de firma"""
+    # Validación de días (5)
+    validity = datetime.datetime.now() + datetime.timedelta(days=5)
+    validity_date = validity.date()
+    validity_date_str = validity_date.strftime('%Y-%m-%d')
+    print('validez', validity_date_str)
+
+    # Crear signature request
+    request_data = {
+        'template_id': template_id,
+        'subject': subject,
+        'reference': reference,
+        'reminder': reminder,
+        'validity': validity_date_str,
+        'request_item_ids': [
+            (0, 0, {'partner_id': partner_ids[0], 'role_id': customer_role_id, 'mail_sent_order': 1}), 
+            (0, 0, {'partner_id': partner_ids[1], 'role_id': customer_role_id, 'mail_sent_order': 2}),
+            (0, 0, {'partner_id': partner_ids[2], 'role_id': employee_role_id, 'mail_sent_order': 3}),
+        ],
+        'message': message,
+        'state': 'sent', # shared, sent, signed, refused, canceled, expired
         'cc_partner_ids': [(6, 0, [partner_ids[2]])],
         'message_partner_ids': [(6, 0, [partner_ids[2]])],
 
