@@ -80,6 +80,7 @@ def solicitud_firma(data: dict):
 
         signing_parties = data.get('SigningParties')
         print('signing_parties: ',signing_parties)
+        print('tamaño: ', len(signing_parties))
         # redirect_url = data.get('redirect_url')
         # print('redirect_url: ',redirect_url)
         documentos = data.get('document')
@@ -224,6 +225,37 @@ def create_template(subject, attachment_id, signing_parties, pages, customer_rol
     return template_id
 
 
+def create_template_cliente(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models):
+    print('templat cliente')
+    print('cliente create_template tag_id', tag_id)
+    """Función de creación de templates"""
+    # Crear template
+    models = ServerProxy('{}/xmlrpc/2/object'.format(url))
+    template_data = {'name': subject, 'attachment_id': attachment_id, 'sign_item_ids': [], 'tag_ids': [(6, 0, [tag_id])],}
+
+    for firmante in signing_parties:
+        for page in pages:  # Iterate through the desired pages list
+            if firmante['display_name'] == 'Cliente':
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+            elif firmante['display_name'] == 'Cliente':
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': customer_role_id, 'posX': 0.7, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+            elif firmante['display_name'] == 'Empleador':
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': employee_role_id, 'posX': 0.43, 'posY': 0.90, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
+
+    template_id = models.execute_kw(db, uid, password, 'sign.template', 'create', [template_data])
+    print('Cliente')
+    return template_id
+
+
 def create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models):
     print('signature')
     """Función de creación de requests de firma"""
@@ -365,7 +397,7 @@ async def procesar_email(request: Request):
             reference = re.findall(r"\d+\.\d+\.\d+\-\d+_\w+", subject)[0]
             print('reference try ', reference)
         except:
-            obtener_reference(subject)
+            reference = obtener_reference(subject)
         print('reference', reference)
 
         archivo = buscar_tag(reference)
