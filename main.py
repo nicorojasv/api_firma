@@ -105,6 +105,7 @@ def solicitud_firma(data: dict):
         empresa_role_id = role_mapping.get('Empresa') # Empresa
         trabajador_role_id = role_mapping.get('Trabajador') # Trabajador
         contacto_role_id = role_mapping.get('Contacto') # Contacto
+        print('ROL cliente: ', cliente_role_id, 'Empresa: ', empresa_role_id, 'Trabajador: ', trabajador_role_id, 'contacto: ', contacto_role_id )
 
         partner_ids = create_partners(signing_parties, uid, password, models)
         print('partner_ids: ',partner_ids)
