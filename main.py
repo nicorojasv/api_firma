@@ -560,12 +560,25 @@ def recuperacion_manual(reference):
     if uid:
         models = ServerProxy('{}/xmlrpc/2/object'.format(url))
         status = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['state']})
-        print('status', status)
+        print('status', status[0]['state'])
+
+        if status[0]['state'] == 'signed':
+            estado = 'FF'
+        elif status[0]['state'] == 'refused':
+            estado = 'OB'
+        elif status[0]['state'] == 'canceled':
+            estado = 'OB'
+        elif status[0]['state'] == 'expired':
+            estado = 'OB'
+        elif status[0]['state'] == 'shared':
+            estado = 'EF'
+        elif status[0]['state'] == 'sent':
+            estado = 'FT'
     try:
         # Construct the payload with descriptive key names and use f-strings for string interpolation
         payload = {
             
-            "estado_firma": status[0]['state'],
+            "estado_firma": estado,
             'tipo_documento': buscar_tag(reference),
             "reference": reference,
             "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
