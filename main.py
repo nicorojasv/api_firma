@@ -110,7 +110,10 @@ def solicitud_firma(data: dict):
         print('tag_id: ',tag_id)
         attachment_id = create_attachment(documentos, uid, password, models)
         print('attachment_id: ',attachment_id)
-        template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
+        if len(signing_parties) == 3:
+            template_id = create_template_cliente(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
+        else:
+            template_id = create_template(subject, attachment_id, signing_parties, pages, customer_role_id, employee_role_id, tag_id, uid, password, models)
         print('template_id: ',template_id)
         request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, customer_role_id, employee_role_id, message, uid, password, models)
         return request_id
@@ -143,22 +146,39 @@ def create_partners(signing_parties, uid, password, models):
     """Función de creación de partners"""
     try:
         # Create partners
-        partner_data_1 = signing_parties[0]
-        partner_data_2 = signing_parties[1]
+        num_partners = len(signing_parties)  # Obtener el número de firmantes
 
-        # Consultar si el primer socio ya está registrado
-        partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
-        if not partner_id_1:
-            partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
-        else:
-            partner_id_1 = partner_id_1[0]
+        # Manejar dinámicamente a cada parte firmante usando un bucle
+        partners = []
+        for i in range(num_partners):
+            partner_data = signing_parties[i]
 
-        partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['email'])]])
-        if not partner_id_2:
-            partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
-        else:
-            partner_id_2 = partner_id_2[0]
+            # Consultar si el socio ya está registrado
+            partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data['email'])]])
+            if not partner_id:
+                partner_id = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data])
+            else:
+                partner_id = partner_id[0]
+
+            partners.append(partner_id)
+        # partner_data_1 = signing_parties[0]
+        # partner_data_2 = signing_parties[1]
+
+        # # Consultar si el primer socio ya está registrado
+        # partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_1['email'])]])
+        # if not partner_id_1:
+        #     partner_id_1 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_1])
+        # else:
+        #     partner_id_1 = partner_id_1[0]
+
+        # partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', partner_data_2['email'])]])
+        # if not partner_id_2:
+        #     partner_id_2 = models.execute_kw(db, uid, password, 'res.partner', 'create', [partner_data_2])
+        # else:
+        #     partner_id_2 = partner_id_2[0]
         print('firmantes')
+        print('partners', partners)
+
         # Obtener el ID del socio con la dirección de correo electrónico 'test@krino.ai'
         cc_partner_email = 'test@firmatec.xyz'
         cc_partner_id = models.execute_kw(db, uid, password, 'res.partner', 'search', [[('email', '=', cc_partner_email)]])
@@ -168,7 +188,9 @@ def create_partners(signing_parties, uid, password, models):
             # Si no existe, puedes decidir cómo manejar este caso
             cc_partner_id = None
         print('cc_partner_id', cc_partner_id)
-        return [partner_id_1, partner_id_2, cc_partner_id]
+        print('FIN', partners + [cc_partner_id])
+        # return [partner_id_1, partner_id_2, cc_partner_id]
+        return partners + [cc_partner_id]  # Lista de devolución de ID de socios e ID de socio CC opcional
     except:
         return {"error": "Faltan signing_parties requeridos en la solicitud."}
 
