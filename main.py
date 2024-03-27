@@ -396,6 +396,7 @@ def obtener_reference(subject):
         if matches:
             reference = matches.group(0)
             print("reference:", reference)
+            return reference
 
 
 @app.post("/obtener_id_documento")
