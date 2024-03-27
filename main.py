@@ -245,6 +245,11 @@ def create_template(subject, attachment_id, signing_parties, pages, trabajador_r
                             'page': page, 'responsible_id': trabajador_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
                 print('trabajador_role_id', trabajador_role_id)
+            elif firmante['display_name'] == 'Cliente':
+                template_data['sign_item_ids'].append(
+                    (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
+                            'page': page, 'responsible_id': trabajador_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                )
             elif firmante['display_name'] == 'Empleador':
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
