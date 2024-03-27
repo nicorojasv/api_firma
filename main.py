@@ -391,7 +391,11 @@ def obtener_reference(subject):
         print('reference', reference)
         return reference
     else:
-        print("No se encontró ningún patrón en el subject.")
+        pattern = r'\b[A-Za-z0-9]+_[A-Za-z0-9]+_\d{1,4}\b' # APD, AD
+        matches = re.search(pattern, subject)
+        if matches:
+            reference = matches.group(0)
+            print("reference:", reference)
 
 
 @app.post("/obtener_id_documento")
