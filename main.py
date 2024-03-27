@@ -578,6 +578,10 @@ def recuperacion_manual(reference):
 
         #obtener id documento desde reference ejemplo de reference 20.154.980-9_ANEX_222 necesito todos los numeros despues del guion
         id_documento = reference.split('_')[-1]
+        print('id_documento', id_documento)
+        print('estado', estado)
+        print('reference', reference)
+        print('tipo_documento', buscar_tag(reference))
 
         # Construct the payload with descriptive key names and use f-strings for string interpolation
         payload = {
