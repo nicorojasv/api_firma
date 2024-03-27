@@ -119,7 +119,7 @@ def solicitud_firma(data: dict):
             template_id = create_template_cliente(subject, attachment_id, signing_parties, pages, cliente_role_id, contacto_role_id, empresa_role_id, tag_id, uid, password, models)
             request_id = create_signature_cliente(template_id, subject, reference, reminder, partner_ids, cliente_role_id, contacto_role_id, empresa_role_id, message, uid, password, models)
         else:
-            template_id = create_template(subject, attachment_id, signing_parties, pages, trabajador_role_id, empresa_role_id, tag_id, uid, password, models)
+            template_id = create_template(subject, attachment_id, signing_parties, pages, trabajador_role_id, cliente_role_id, empresa_role_id, tag_id, uid, password, models)
             request_id = create_signature_request(template_id, subject, reference, reminder, partner_ids, trabajador_role_id, empresa_role_id, message, uid, password, models)
         print('template_id: ',template_id)
         return request_id
@@ -227,7 +227,7 @@ def create_attachment(documentos, uid, password, models):
     return attachment_id
 
 
-def create_template(subject, attachment_id, signing_parties, pages, trabajador_role_id, empresa_role_id, tag_id, uid, password, models):
+def create_template(subject, attachment_id, signing_parties, pages, trabajador_role_id, cliente_role_id, empresa_role_id, tag_id, uid, password, models):
     print('templat')
     print('create_template tag_id', tag_id)
     """Función de creación de templates"""
@@ -248,8 +248,9 @@ def create_template(subject, attachment_id, signing_parties, pages, trabajador_r
             elif firmante['display_name'] == 'Cliente':
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
-                            'page': page, 'responsible_id': trabajador_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
+                            'page': page, 'responsible_id': cliente_role_id, 'posX': 0.15, 'posY': 0.85, 'width': 0.2, 'height': 0.1, 'required': True})
                 )
+                print('cliente_role_id', cliente_role_id)
             elif firmante['display_name'] == 'Empleador':
                 template_data['sign_item_ids'].append(
                     (0, 0, {'type_id': firmante['color'], 'required': True, 'name': firmante['name'],
