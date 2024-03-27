@@ -560,8 +560,9 @@ def recuperacion_manual(reference):
     if uid:
         models = ServerProxy('{}/xmlrpc/2/object'.format(url))
         status = models.execute_kw(db, uid, password, 'sign.request', 'search_read', [[('reference', '=', reference)]], {'fields': ['state']})
-        print('status', status[0]['state'])
-
+    
+    try:
+        
         if status[0]['state'] == 'signed':
             estado = 'FF'
         elif status[0]['state'] == 'refused':
@@ -574,11 +575,15 @@ def recuperacion_manual(reference):
             estado = 'EF'
         elif status[0]['state'] == 'sent':
             estado = 'FT'
-    try:
+
+        #obtener id documento desde reference ejemplo de reference 20.154.980-9_ANEX_222 necesito todos los numeros despues del guion
+        id_documento = reference.split('_')[-1]
+
         # Construct the payload with descriptive key names and use f-strings for string interpolation
         payload = {
             
             "estado_firma": estado,
+            "documento_id": id_documento,
             'tipo_documento': buscar_tag(reference),
             "reference": reference,
             "documento_pdf": traer_documentos(reference, tipo_documento = 'contrato'),
